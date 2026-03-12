@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1E1C1A">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Fonts: Playfair Display for headings, Space Mono for body/tech feel, Montserrat for modern sans logo, Bodoni Moda for elegant branding -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Background Map Layer -->
+        <div id="map-layer">
+            <div id="map-bg"></div>
+            <svg id="trail-svg"></svg>
+            <div id="nodes-container"></div>
+        </div>
+
+        <!-- Fog of War Overlay -->
+        <div id="fog-overlay"></div>
+
+        <!-- UI Layer -->
+        <div id="ui-layer">
+            
+            <!-- Top HUD -->
+            <header class="hud-top glass-panel ui-fade-in" style="animation-delay: 2s;">
+                <div class="brand-logo-mini">
+                    <span class="elegant-w">W</span>anderl&oslash;st
+                    <span class="ai-badge" style="font-size: 0.5rem; background: var(--accent-vintage); color: #fff; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; opacity: 0.8;">AI</span>
+                </div>
+                <!-- ... other HUD elements ... -->
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+                    <div class="user-stats">
+                        <span class="level">Level 1 Explorer</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 33%;"></div></div>
+                    </div>
+                </div>
+                <div class="badges-mini">
+                    <i class="fa-solid fa-plane locked"></i>
+                    <i class="fa-solid fa-camera locked"></i>
+                    <i class="fa-solid fa-compass locked"></i>
+                </div>
+                <button id="settings-btn" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+            </header>
+
+            <!-- Bottom Control Panel -->
+            <div class="bottom-controls">
+                
+                <!-- Active Location Card (Hidden by default) -->
+                <div id="location-card" class="glass-panel slide-up hidden">
+                    <div class="card-header">
+                        <span class="tag neon-text">New Discovery</span>
+                        <h2 id="loc-title">The Whispering Alley</h2>
+                        <p id="loc-desc">A local favorite untouched by tourists. Find the hidden entrance behind the old bakery.</p>
+                    </div>
+                    <div class="card-actions">
+                        <button id="ready-btn" class="primary-btn glow-btn">
+                            <i class="fa-solid fa-location-arrow"></i> Ready to Go
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Next Area Hint (Shown when idle) -->
+                <div id="idle-prompt" class="glass-panel slide-up" style="animation-delay: 2.5s; opacity: 0; animation-fill-mode: forwards;">
+                    <div class="radar-ping"></div>
+                    <p>Scanning for nearby secrets...</p>
+                    <button id="scan-btn" class="secondary-btn"><i class="fa-solid fa-satellite-dish"></i> Initiate Scan</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Modals -->
+        
+        <!-- Subscription Modal -->
+        <div id="subscription-modal" class="modal-backdrop hidden">
+            <div class="modal-content glass-panel premium-glass scale-in">
+                <button class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+                <div class="modal-body">
+                    <div class="premium-icon">
+                        <i class="fa-solid fa-gem glow-icon"></i>
+                    </div>
+                    <h2><span class="elegant-w elegant-w-elite">W</span>anderl&oslash;st <span class="accent-gold">Elite</span></h2>
+                    <p class="subtitle">Unlock the city's deepest secrets.</p>
+                    
+                    <ul class="features-list">
+                        <li><i class="fa-solid fa-check"></i> Unlimited local-loved location revelations</li>
+                        <li><i class="fa-solid fa-check"></i> Exclusive Explorer badges</li>
+                        <li><i class="fa-solid fa-check"></i> Ad-free immersive mapping</li>
+                        <li><i class="fa-solid fa-check"></i> Time-shifted routing to avoid crowds</li>
+                    </ul>
+
+                    <div class="price-tag">
+                        <span class="currency">CHF</span>
+                        <span class="amount">20</span>
+                        <span class="period">/ month</span>
+                    </div>
+
+                    <div class="compliance-billing-info" style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-bottom: 20px; line-height: 1.4;">
+                        <strong>Full Price:</strong> 20.00 CHF billed monthly.<br>
+                        <strong>Next Renewal:</strong> <span id="dynamic-renewal-date">Calculating...</span><br>
+                        <em>Cancel anytime in your Profile.</em>
+                    </div>
+
+                    <button class="primary-btn glow-btn" id="subscribe-now-btn">Subscribe Now</button>
+                    
+                    <div style="text-align: center; margin-top: 15px; font-size: 0.7rem; color: var(--vintage-border-dim);">
+                        <i class="fa-solid fa-robot"></i> Generative AI Powered Discovery
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout / Payment Modal -->
+        <div id="checkout-modal" class="modal-backdrop hidden">
+            <div class="modal-content glass-panel premium-glass scale-in" style="max-width: 450px; padding: 40px;">
+                <button class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <h2 style="font-family: var(--font-heading); margin-bottom: 5px; font-size: 1.8rem; text-align: center;">Secure Checkout</h2>
+                <p class="subtitle" style="text-align: center; margin-bottom: 25px;">Wanderløst Elite Membership</p>
+
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <span>Elite Subscription (Monthly)</span>
+                        <span>20.00 CHF</span>
+                    </div>
+                    <div class="summary-row total-row">
+                        <span>Total Due Today</span>
+                        <span class="accent-gold">20.00 CHF</span>
+                    </div>
+                </div>
+
+                <div class="payment-methods">
+                    <button class="payment-method-btn"><i class="fa-brands fa-apple"></i> Pay</button>
+                    <button class="payment-method-btn"><i class="fa-brands fa-google"></i> Pay</button>
+                </div>
+
+                <div class="divider">
+                    <span>or pay with card</span>
+                </div>
+
+                <form id="checkout-form" class="checkout-form" onsubmit="event.preventDefault();">
+                    <div class="input-group">
+                        <label for="card-name">Name on Card</label>
+                        <input type="text" id="card-name" placeholder="John Doe" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="card-number">Card Number</label>
+                        <div class="card-input-wrapper">
+                            <i class="fa-regular fa-credit-card"></i>
+                            <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-row">
+                        <div class="input-group half-width">
+                            <label for="card-expiry">Expiry (MM/YY)</label>
+                            <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5" required>
+                        </div>
+                        <div class="input-group half-width">
+                            <label for="card-cvc">CVC</label>
+                            <input type="text" id="card-cvc" placeholder="123" maxlength="4" required>
+                        </div>
+                    </div>
+
+                    <button type="button" id="confirm-payment-btn" class="primary-btn glow-btn" style="width: 100%; margin-top: 20px;">
+                        <span class="btn-text">Pay 20.00 CHF</span>
+                        <i class="fa-solid fa-circle-notch fa-spin hidden btn-spinner"></i>
+                    </button>
+                    
+                    <p class="secure-badge"><i class="fa-solid fa-lock"></i> Payments are secure and encrypted</p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="modal-backdrop hidden">
+            <div class="modal-content glass-panel premium-glass scale-in" style="max-width: 500px; padding: 40px;">
+                <button class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="profile-header">
+                    <div class="avatar profile-avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+                    <h2>My Dossier</h2>
+                    <p class="subtitle">Level 1 Explorer</p>
+                </div>
+
+                <div class="profile-section">
+                    <h3 class="section-title">History & Discoveries</h3>
+                    <ul class="history-list">
+                        <!-- Populated by JS, but showing empty state or initial states -->
+                        <li class="history-item">
+                            <span class="history-date">Today</span>
+                            <span class="history-name">The Whispering Alley</span>
+                        </li>
+                        <p class="history-empty hidden">No secrets uncovered yet.</p>
+                    </ul>
+                </div>
+
+                <div class="profile-section">
+                    <h3 class="section-title">Badges Earned</h3>
+                    <div class="badges-grid">
+                        <div class="badge-item"><i class="fa-solid fa-plane"></i><span>Novice</span></div>
+                        <div class="badge-item locked"><i class="fa-solid fa-camera"></i><span>Observer</span></div>
+                        <div class="badge-item locked"><i class="fa-solid fa-compass"></i><span>Pathfinder</span></div>
+                    </div>
+                </div>
+
+                <div class="profile-footer-links">
+                    <button class="text-link-btn" id="manage-payments-btn"><i class="fa-solid fa-credit-card"></i> Manage Payments</button>
+                    <button class="text-link-btn" id="terms-btn"><i class="fa-solid fa-file-contract"></i> Terms & Conditions</button>
+                    <button class="text-link-btn danger-link" id="cancel-membership-btn"><i class="fa-solid fa-ban"></i> Cancel Membership</button>
+                    <button class="text-link-btn danger-link" id="delete-data-btn"><i class="fa-solid fa-trash-can"></i> Delete My Data</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legal Modal -->
+        <div id="legal-modal" class="modal-backdrop hidden">
+            <div class="modal-content glass-panel premium-glass scale-in legal-document" style="max-width: 600px; height: 80vh; overflow-y: auto; padding: 40px; text-align: left;">
+                <button class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <h2 style="font-family: var(--font-heading); margin-bottom: 5px; font-size: 2rem;">Legal & Privacy</h2>
+                <p class="subtitle" style="margin-bottom: 30px; font-size: 0.9rem;">Last Updated: March 2026</p>
+
+                <div class="legal-content">
+                    <h3>1. Terms & Conditions (The Service Contract)</h3>
+                    
+                    <h4>A. Membership & Subscription</h4>
+                    <p><strong>The Model:</strong> You are entering into a monthly membership for 20 CHF/month. This is a personal, non-transferable license to use the Wanderløst Elite discovery engine.</p>
+                    <p><strong>Billing:</strong> Subscriptions are auto-renewing. You will be billed every 30 days from your signup date.</p>
+                    <p><strong>Cancellation:</strong> You may cancel at any time via the "Cancel Membership" button in your Account Settings. Cancellation takes effect at the end of the current billing cycle. No partial refunds are provided for used portions of a month.</p>
+                    
+                    <h4>B. The Scavenger Hunt & Safety</h4>
+                    <p><strong>Sequential Discovery:</strong> You acknowledge that the App reveals locations one by one. Wanderløst is not responsible for your inability to reach a location or for the closure of any suggested "Niche Spot."</p>
+                    <p><strong>User Conduct:</strong> You agree to respect the "Local Secret" nature of these spots. Sharing revealed locations on public social media (TikTok/Instagram) in a way that leads to overcrowding may result in account suspension to protect the community vibe.</p>
+                    
+                    <h4>C. AI Disclaimer (EU AI Act 2026 Compliant)</h4>
+                    <p><strong>Generative Content:</strong> Our "Clue Master" and "Route Finder" are powered by Generative AI. While we strive for accuracy, AI can occasionally "hallucinate" or provide outdated information.</p>
+                    <p><strong>Final Judgment:</strong> You are solely responsible for your own safety. Do not follow AI suggestions if they lead to dangerous areas, private property, or violate local laws.</p>
+                    
+                    <hr>
+
+                    <h3>2. Privacy Policy (Data Protection)</h3>
+                    <p style="font-style: italic;">Global Standard: GDPR / nFADP / CCPA</p>
+                    
+                    <h4>A. Data We Collect</h4>
+                    <p><strong>Precise Geolocation:</strong> We collect your foreground location only when the app is open to unlock the next scavenger hunt stage and create your "Travel Trail."</p>
+                    <p><strong>Behavioral Data:</strong> Our AI analyzes which spots you visit and how long you stay to personalize your future trails.</p>
+                    <p><strong>Vector Profiling:</strong> We store a mathematical representation of your travel "vibe" (preferences) in our secure vector database.</p>
+                    
+                    <h4>B. How We Use AI with Your Data</h4>
+                    <p>We use an automated AI agent to scan public data and match it with your profile. This processing is necessary to provide the core service of the app.</p>
+                    <p><strong>No Selling:</strong> We do not sell your personal movement data to third-party advertisers. Your data stays within the Wanderløst ecosystem.</p>
+                    
+                    <h4>C. Your Rights</h4>
+                    <p><strong>Right to Delete:</strong> You can delete your entire account and all associated GPS trails instantly via the "Delete My Data" button in settings.</p>
+                    <p><strong>Data Portability:</strong> You may request an export of your "Travel Trails" and "Badges" at any time.</p>
+
+                    <hr>
+
+                    <h3>3. Contact & Impressum (Mandatory)</h3>
+                    <p><strong>Company:</strong> [Your Registered Company Name]</p>
+                    <p><strong>Address:</strong> [Your Physical Business Address]</p>
+                    <p><strong>UID/Register No.:</strong> [Your Business Registration Number]</p>
+                    <p><strong>Email:</strong> support@wanderlost.com</p>
+                    <p><strong>Data Protection Officer (DPO):</strong> [Your Name/Email]</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Welcome Modal -->
+         <div id="welcome-modal" class="modal-backdrop initial-overlay">
+            <div class="modal-content glass-panel cinematic-reveal">
+                <div class="modal-body">
+                    <div class="poster-logo-container">
+                        <div class="poster-top-line">THE SECRET CITY</div>
+                        <div class="brand-logo-main poster-lockup">
+                            <span class="elegant-w">W</span><span class="poster-anderlost">anderl&oslash;st</span>
+                        </div>
+                        <div class="poster-bottom-line">A MODERN ELEGANT JOURNEY</div>
+                    </div>
+                    <p class="immersion-text">Discover something hidden from the masses.</p>
+                    <div style="margin-top:30px;">
+                        <button id="start-journey-btn" class="primary-btn glow-btn poster-btn">Begin Journey</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Live Map API (No key provided, might show dev watermark, but works for demo) -->
+    <script src="https://maps.googleapis.com/maps/api/js?callback=initMap" async defer></script>
+    <script src="app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful');
+            })
+            .catch(err => {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+</body>
+</html>
