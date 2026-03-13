@@ -267,6 +267,12 @@ function init() {
         d.setDate(d.getDate() + 30);
         renewalEl.textContent = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     }
+
+    // Collapse Card Logic
+    const btnCollapse = document.getElementById('collapse-btn');
+    btnCollapse.addEventListener('click', () => {
+        locationCard.classList.toggle('is-collapsed');
+    });
 }
 
 function renderNodes() {

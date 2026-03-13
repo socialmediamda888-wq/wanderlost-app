@@ -1142,6 +1142,44 @@ button {
     box-shadow: 6px 6px 0px rgba(30, 28, 26, 0.4);
     border-radius: 0; /* Match poster harsh corners */
 }
+/* Collapsible Location Card */
+.collapse-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--vintage-border);
+    color: var(--text-primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.collapse-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#location-card.is-collapsed {
+    transform: translateY(calc(100% - 40px));
+}
+
+#location-card.is-collapsed .collapse-toggle i {
+    transform: rotate(180deg);
+}
+
+#location-card.is-collapsed .card-header p,
+#location-card.is-collapsed .card-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
 .poster-btn:hover {
     box-shadow: 8px 8px 0px rgba(30, 28, 26, 0.4);
 }
