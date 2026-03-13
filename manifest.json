@@ -2,7 +2,7 @@
   "name": "Wanderløst",
   "short_name": "Wanderløst",
   "description": "Discover something hidden from the masses.",
-  "start_url": ".",
+  "start_url": "/wanderlost-app/",
   "display": "standalone",
   "background_color": "#1E1C1A",
   "theme_color": "#1E1C1A",
