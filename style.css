@@ -1166,18 +1166,25 @@ button {
 }
 
 #location-card.is-collapsed {
-    transform: translateY(calc(100% - 40px));
+    transform: translateY(10px); /* Slight bump but mostly shrink */
 }
 
 #location-card.is-collapsed .collapse-toggle i {
     transform: rotate(180deg);
 }
 
-#location-card.is-collapsed .card-header p,
+#location-card.is-collapsed #loc-desc,
 #location-card.is-collapsed .card-actions {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
+    display: none;
+}
+
+#location-card.is-collapsed .card-header {
+    padding-bottom: 5px;
+}
+
+#location-card.is-collapsed h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0;
 }
 
 .poster-btn:hover {
