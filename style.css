@@ -19,8 +19,22 @@
     --font-heading: 'Bodoni Moda', 'Playfair Display', serif;
     --font-body: 'Montserrat', sans-serif;
     
-    --radius-lg: 4px; /* Sharper corners for a print/ticket feel */
+    --radius-lg: 16px; /* Sharper corners for a print/ticket feel */
     --radius-round: 50%;
+}
+
+/* Hide Google Maps internal overlays that clobber the UI */
+.gm-err-container, .gm-style-cc, .gmnoprint, button[title="Toggle fullscreen view"] {
+    display: none !important;
+}
+
+/* Specifically hide the 'Do you own this website?' warning if it appears in dev */
+div[style*="z-index: 1000001"] {
+    display: none !important;
+}
+
+.gm-style iframe + div {
+    border: none !important;
 }
 
 * {

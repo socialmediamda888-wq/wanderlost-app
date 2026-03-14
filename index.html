@@ -309,9 +309,24 @@
 
     </div>
 
-    <!-- Live Map API (No key provided, might show dev watermark, but works for demo) -->
-    <script src="https://maps.googleapis.com/maps/api/js?callback=initMap" async defer></script>
-    <script src="./app.js"></script>
+        <!-- Custom Notification/Alert Modal -->
+        <div id="custom-modal" class="modal-backdrop hidden">
+            <div class="modal-content glass-panel premium-glass scale-in" style="max-width: 400px; text-align: center; padding: 40px;">
+                <div id="modal-icon" style="font-size: 3rem; color: var(--accent-vintage); margin-bottom: 20px;">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <h2 id="modal-title" style="margin-bottom: 10px;">Notice</h2>
+                <p id="modal-message" style="margin-bottom: 30px; line-height: 1.6; color: var(--text-secondary);"></p>
+                <div class="modal-actions" style="display: flex; gap: 10px;">
+                    <button id="modal-cancel-btn" class="secondary-btn hidden" style="flex: 1;">Cancel</button>
+                    <button id="modal-ok-btn" class="primary-btn" style="flex: 1;">Understood</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Map API -->
+        <script src="https://maps.googleapis.com/maps/api/js?callback=initMap" async defer></script>
+        <script src="./app.js"></script>
     
     <!-- Service Worker Registration -->
     <script>

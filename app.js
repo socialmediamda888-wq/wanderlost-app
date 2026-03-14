@@ -62,6 +62,57 @@ const state = {
     BACKEND_URL: 'https://wicked-icons-help.loca.lt' 
 };
 
+// Custom Modal System (To hide domain and match aesthetic)
+function showAlert(message, title = "Notice", icon = "fa-circle-info") {
+    const modal = document.getElementById('custom-modal');
+    const msgEl = document.getElementById('modal-message');
+    const titleEl = document.getElementById('modal-title');
+    const iconEl = document.getElementById('modal-icon');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const okBtn = document.getElementById('modal-ok-btn');
+
+    msgEl.textContent = message;
+    titleEl.textContent = title;
+    iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+    cancelBtn.classList.add('hidden');
+    
+    modal.classList.remove('hidden');
+
+    return new Promise((resolve) => {
+        okBtn.onclick = () => {
+            modal.classList.add('hidden');
+            resolve(true);
+        };
+    });
+}
+
+function showConfirm(message, title = "Confirmation", icon = "fa-circle-question") {
+    const modal = document.getElementById('custom-modal');
+    const msgEl = document.getElementById('modal-message');
+    const titleEl = document.getElementById('modal-title');
+    const iconEl = document.getElementById('modal-icon');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+    const okBtn = document.getElementById('modal-ok-btn');
+
+    msgEl.textContent = message;
+    titleEl.textContent = title;
+    iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+    cancelBtn.classList.remove('hidden');
+    
+    modal.classList.remove('hidden');
+
+    return new Promise((resolve) => {
+        okBtn.onclick = () => {
+            modal.classList.add('hidden');
+            resolve(true);
+        };
+        cancelBtn.onclick = () => {
+            modal.classList.add('hidden');
+            resolve(false);
+        };
+    });
+}
+
 // DOM Elements
 const nodesContainer = document.getElementById('nodes-container');
 const trailSvg = document.getElementById('trail-svg');
@@ -152,6 +203,7 @@ function init() {
                                 desc: result.data.desc,
                                 lat: result.data.lat,
                                 lng: result.data.lng,
+                                reason: result.data.reason,
                                 status: 'active'
                             };
                             
@@ -165,23 +217,26 @@ function init() {
                             btnScan.disabled = false;
                         }, 1800);
                     } else {
-                        alert(result.message || "No local gems found nearby.");
+                        await showAlert(result.message || "No local gems found nearby.", "Discovery Failed", "fa-building-circle-exclamation");
                         btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
                         btnScan.disabled = false;
                     }
                 } catch (err) {
-                    console.error(err);
-                    alert("Backend Error: Make sure your AI Rig/Server is running!");
+                    console.error("Discovery API Error:", err);
+                    await showAlert(`Unable to reach the Intelligence Rig.
+
+If this is your first time scanning today, please visit your tunnel link manually in your browser to click the "Bypass" button:
+${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
                     btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
                     btnScan.disabled = false;
                 }
             }, (error) => {
-                alert("GPS Error: Please enable location services.");
+                showAlert("GPS Access Denied. To discover secret spots, please enable location services in your browser settings.", "GPS Required", "fa-location-dot");
                 btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
                 btnScan.disabled = false;
             });
         } else {
-            alert("Geolocation is not supported by your browser.");
+            showAlert("Geolocation is not supported by your browser.", "Device Error", "fa-mobile-screen");
             btnScan.disabled = false;
         }
     });
@@ -215,9 +270,9 @@ function init() {
 
     let previousModalForCheckout = null;
 
-    btnSettings.addEventListener('click', () => {
+    btnSettings.addEventListener('click', async () => {
         if(state.isSubscribed) {
-            alert("You are already a Wanderløst Elite member! Manage your subscription from your Profile Dossier.");
+            await showAlert("You are already a Wanderløst Elite member! Manage your subscription from your Profile Dossier.", "Active Status", "fa-user-check");
         } else {
             modalSub.classList.remove('hidden');
         }
@@ -274,17 +329,17 @@ function init() {
         btnConfirmPayment.disabled = true;
 
         // Simulate Network Request
-        setTimeout(() => {
+        setTimeout(async () => {
             // Success State
             btnText.textContent = 'Payment Successful';
             spinner.classList.add('hidden');
             state.isSubscribed = true;
             
             // Close after brief success delay
-            setTimeout(() => {
+            setTimeout(async () => {
                 modalCheckout.classList.add('hidden');
                 previousModalForCheckout = null;
-                alert("Welcome to Wanderløst Elite! Your location discovery limits have been lifted.");
+                await showAlert("Welcome to Wanderløst Elite! Your location discovery limits have been lifted.", "Membership Active", "fa-crown");
                 
                 // Reset button for future reference
                 btnConfirmPayment.disabled = false;
@@ -294,9 +349,9 @@ function init() {
     });
     
     // Wire up dummy payments/terms buttons purely for visual feel closing
-    document.getElementById('manage-payments-btn').addEventListener('click', () => {
+    document.getElementById('manage-payments-btn').addEventListener('click', async () => {
         if(state.isSubscribed) {
-             alert("Current Plan: Wanderløst Elite\nStatus: Active\nNext Billing Date: " + new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString());
+             await showAlert("Current Plan: Wanderløst Elite\nStatus: Active\nNext Billing Date: " + new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString(), "Payment Info", "fa-credit-card");
         } else {
              previousModalForCheckout = modalProfile;
              modalProfile.classList.add('hidden');
@@ -310,16 +365,18 @@ function init() {
     });
     
     // Danger Actions (Mocked)
-    document.getElementById('cancel-membership-btn').addEventListener('click', () => {
-        if(confirm("Are you sure you want to cancel Wanderløst Elite? You will lose access to detailed locations and badges at the end of your billing cycle.")) {
-            alert("Membership cancellation requested. You will receive an email confirmation shortly.");
+    document.getElementById('cancel-membership-btn').addEventListener('click', async () => {
+        const confirmed = await showConfirm("Are you sure you want to cancel Wanderløst Elite? You will lose access to detailed locations and badges at the end of your billing cycle.", "Cancel Membership", "fa-triangle-exclamation");
+        if(confirmed) {
+            await showAlert("Membership cancellation requested. You will receive an email confirmation shortly.", "Request Received", "fa-paper-plane");
         }
     });
     
-    document.getElementById('delete-data-btn').addEventListener('click', () => {
-        if(confirm("DANGER: Are you sure you want to delete your entire Wanderløst account and all travel trail history? This action is permanent and cannot be undone.")) {
-            alert("Data deletion request received. All history and vector profiles are being purged. The app will now reload.");
-            window.location.reload();
+    document.getElementById('delete-data-btn').addEventListener('click', async () => {
+        const confirmed = await showConfirm("DANGER: This will permanently delete your travel trail and all badges. This action cannot be undone.", "Delete All Data", "fa-radiation");
+        if(confirmed) {
+            await showAlert("Your dossier has been purged from our secure servers.", "Data Deleted", "fa-trash-can");
+            location.reload();
         }
     });
     
