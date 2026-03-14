@@ -44,7 +44,9 @@ const state = {
         { id: 4, x: 60, y: 80, title: "Jazz Basement", desc: "Listen carefully. Knock three times on the blue door.", status: 'hidden' },
     ],
     currentNodeIndex: -1,
-    isSubscribed: false
+    isSubscribed: false,
+    // YOUR LIVE TUNNEL LINK
+    BACKEND_URL: 'https://wicked-icons-help.loca.lt' 
 };
 
 // DOM Elements
@@ -107,17 +109,68 @@ function init() {
 
     btnScan.addEventListener('click', () => {
         btnScan.disabled = true;
-        btnScan.innerHTML = '<i class="fa-solid fa-filter fa-spin"></i> Verifying Authenticity...';
+        btnScan.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Getting GPS...';
         
-        setTimeout(() => {
-            btnScan.innerHTML = '<i class="fa-solid fa-microchip fa-spin"></i> Analyzing Cultural Signals...';
-            
-            setTimeout(() => {
-                revealNextNode();
+        // Use real geolocation
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                
+                btnScan.innerHTML = '<i class="fa-solid fa-filter fa-spin"></i> Verifying Authenticity...';
+                
+                try {
+                    // Call our new backend
+                    const response = await fetch(`${state.BACKEND_URL}/api/discover`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lat: latitude, lng: longitude })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        btnScan.innerHTML = '<i class="fa-solid fa-microchip fa-spin"></i> Analyzing Cultural Signals...';
+                        
+                        setTimeout(() => {
+                            // Inject the real data into the state
+                            const node = {
+                                id: Date.now(),
+                                title: result.data.title,
+                                desc: result.data.desc,
+                                lat: result.data.lat,
+                                lng: result.data.lng,
+                                status: 'active'
+                            };
+                            
+                            state.nodes.push(node);
+                            state.currentNodeIndex = state.nodes.length - 1;
+                            
+                            renderNodes();
+                            showLocationDetails(node);
+                            
+                            btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                            btnScan.disabled = false;
+                        }, 1800);
+                    } else {
+                        alert(result.message || "No local gems found nearby.");
+                        btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                        btnScan.disabled = false;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Backend Error: Make sure your AI Rig/Server is running!");
+                    btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                    btnScan.disabled = false;
+                }
+            }, (error) => {
+                alert("GPS Error: Please enable location services.");
                 btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
                 btnScan.disabled = false;
-            }, 1800);
-        }, 1500);
+            });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+            btnScan.disabled = false;
+        }
     });
 
     btnReady.addEventListener('click', () => {
