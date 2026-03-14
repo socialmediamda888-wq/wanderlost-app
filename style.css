@@ -24,12 +24,16 @@
 }
 
 /* Hide Google Maps internal overlays that clobber the UI */
-.gm-err-container, .gm-style-cc, .gmnoprint, button[title="Toggle fullscreen view"] {
+.gm-err-container, .gm-style-cc, .gmnoprint, button[title="Toggle fullscreen view"], .gm-style-pbc {
     display: none !important;
 }
 
-/* Specifically hide the 'Do you own this website?' warning if it appears in dev */
-div[style*="z-index: 1000001"] {
+/* Specifically hide the 'Do you own this website?' and watermarks */
+div[style*="z-index: 1000001"], div[style*="z-index: 1000000"] {
+    display: none !important;
+}
+
+.gm-style-pbc + div {
     display: none !important;
 }
 
