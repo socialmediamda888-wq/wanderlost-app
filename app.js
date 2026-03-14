@@ -59,7 +59,11 @@ const state = {
     currentNodeIndex: -1,
     isSubscribed: false,
     // YOUR LIVE TUNNEL LINK
+<<<<<<< HEAD
     BACKEND_URL: 'https://brave-carrots-stay.loca.lt' 
+=======
+    BACKEND_URL: 'https://wicked-icons-help.loca.lt' 
+>>>>>>> 65dc094d223edacf8de64bc658017188244e342c
 };
 
 // Custom Modal System (To hide domain and match aesthetic)
