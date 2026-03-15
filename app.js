@@ -205,12 +205,15 @@ function init() {
                         
                         setTimeout(() => {
                             // Inject the real data into the state
+                            // We assign random x/y for the "Paper Map" view so they show up within bounds (20% to 80%)
                             const node = {
                                 id: Date.now(),
                                 title: result.data.title,
                                 desc: result.data.desc,
                                 lat: result.data.lat,
                                 lng: result.data.lng,
+                                x: 30 + Math.random() * 40, 
+                                y: 30 + Math.random() * 40,
                                 reason: result.data.reason,
                                 status: 'active'
                             };
@@ -313,12 +316,14 @@ ${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
         modalCheckout.classList.remove('hidden');
     });
 
-    // Profile Modal — resolved safely here to prevent null crash at top level
-    btnOpenProfile = document.getElementById('open-profile-btn');
-    if (btnOpenProfile) {
-        btnOpenProfile.addEventListener('click', () => {
+    // Profile Modal — force binding and high visibility
+    const profileBtn = document.getElementById('open-profile-btn');
+    if (profileBtn) {
+        profileBtn.onclick = (e) => {
+            console.log("Dossier Triggered");
             modalProfile.classList.remove('hidden');
-        });
+            modalProfile.style.display = 'flex'; // Ensure backdrop shows
+        };
     }
 
     btnCloseProfile.addEventListener('click', () => {
@@ -458,13 +463,19 @@ function renderNodes() {
 function drawTrails() {
     trailSvg.innerHTML = '';
     
-    const visitedNodes = state.nodes.filter(n => n.status === 'visited' || n.status === 'active');
-    if (visitedNodes.length < 2) return;
+    let nodesToDraw = state.nodes.filter(n => n.status === 'visited' || n.status === 'active');
+    
+    // If only one discovery, draw trail from a starting point (approx center/home)
+    if (nodesToDraw.length === 1) {
+        nodesToDraw = [{x: 50, y: 50}, ...nodesToDraw];
+    }
+    
+    if (nodesToDraw.length < 2) return;
 
     let pathD = '';
-    for (let i = 0; i < visitedNodes.length - 1; i++) {
-        const start = visitedNodes[i];
-        const end = visitedNodes[i+1];
+    for (let i = 0; i < nodesToDraw.length - 1; i++) {
+        const start = nodesToDraw[i];
+        const end = nodesToDraw[i+1];
         
         // Convert % to pixels roughly based on container size for the SVG path
         // Using % for SVG elements requires viewBox logic, so we'll just set paths using percentages
@@ -476,8 +487,8 @@ function drawTrails() {
         }
         
         // Add a slight curve (bezier)
-        const midX = (start.x + end.x) / 2 + (Math.random() * 10 - 5);
-        const midY = (start.y + end.y) / 2 + (Math.random() * 10 - 5);
+        const midX = (start.x + end.x) / 2 + (Math.random() * 20 - 10);
+        const midY = (start.y + end.y) / 2 + (Math.random() * 20 - 10);
         
         pathD += `Q ${midX} ${midY}, ${end.x} ${end.y} `;
     }

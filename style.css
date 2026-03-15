@@ -47,22 +47,23 @@ div[style*="z-index: 1000001"], div[style*="z-index: 1000000"] {
     box-sizing: border-box;
 }
 
-body, html {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background-color: var(--bg-dark);
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    -webkit-font-smoothing: antialiased;
+#ui-layer {
+    position: relative;
+    z-index: 100 !important; /* Above fog and map */
+    pointer-events: none;
 }
 
-#app-container {
+#ui-layer > * {
+    pointer-events: auto;
+}
+
+#open-profile-btn {
     position: relative;
-    width: 100%;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
+    z-index: 110 !important;
+}
+
+.modal-backdrop {
+    z-index: 200 !important;
 }
 
 /* Typography */
@@ -179,27 +180,37 @@ h1, h2, h3, h4 {
 
 .map-node {
     position: absolute;
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: var(--bg-panel);
-    border: 2px solid var(--accent-vintage);
-    transform: translate(-50%, -50%);
+    background: #A03020; /* Deep wax seal red */
+    border: 3px solid rgba(255,255,255,0.2);
+    transform: translate(-50%, -50%) rotate(-5deg);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-heading);
-    font-weight: 700;
-    font-style: italic;
-    font-size: 1.1rem;
-    color: var(--accent-vintage);
-    box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: #F4EBD9;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.4);
+}
+
+.map-node::before {
+    /* Wax overflow effect */
+    content: '';
+    position: absolute;
+    inset: -4px;
+    background: inherit;
+    opacity: 0.6;
+    border-radius: 35% 65% 55% 45% / 45% 35% 65% 55%;
+    z-index: -1;
 }
 
 .map-node:hover {
-    transform: translate(-50%, -50%) scale(1.15);
+    transform: translate(-50%, -50%) scale(1.1) rotate(5deg);
 }
 
 .map-node.active {
@@ -659,22 +670,40 @@ button {
     display: none !important;
 }
 
-.slide-up {
-    animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+/* Card Collapse Logic */
+#location-card {
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    max-height: 500px;
+    overflow: hidden;
 }
 
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
+#location-card.is-collapsed {
+    max-height: 80px;
+    padding-top: 15px;
+    padding-bottom: 0;
 }
 
-.scale-in {
-    animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+#location-card.is-collapsed .card-header p,
+#location-card.is-collapsed .card-actions {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
 }
 
-@keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95) rotate(-2deg); }
-    to { opacity: 1; transform: scale(1) rotate(0deg); }
+.collapse-toggle {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: var(--accent-vintage);
+    font-size: 1.2rem;
+    z-index: 10;
+    transition: transform 0.4s ease;
+}
+
+#location-card.is-collapsed .collapse-toggle {
+    transform: rotate(180deg);
 }
 
 /* Profile / Dossier Specifics */
@@ -1359,15 +1388,17 @@ button {
     }
 }
 
-/* Premium Branding - Elegant W */
-.elegant-w {
-    font-family: var(--font-heading);
+/* Unified Premium Branding */
+.brand-w, .elegant-w {
+    font-family: var(--font-heading) !important;
     color: var(--accent-vintage);
-    font-weight: 900;
+    font-weight: 900 !important;
     font-size: 1.4em;
     vertical-align: baseline;
-    font-style: italic;
+    font-style: italic !important;
     letter-spacing: -2px;
+    display: inline-block;
+    transition: all 0.3s ease;
 }
 
 .brand-logo-main {
