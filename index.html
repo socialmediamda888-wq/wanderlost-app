@@ -309,6 +309,22 @@
 
     </div>
 
+        <!-- Branded Location Permission Pre-Prompt -->
+        <div id="location-permission-modal" class="modal-backdrop hidden">
+            <div class="modal-content glass-panel premium-glass scale-in" style="max-width: 400px; text-align: center; padding: 40px;">
+                <div style="font-size: 3.5rem; color: var(--accent-vintage); margin-bottom: 20px;">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                </div>
+                <h2 style="margin-bottom: 10px; font-family: var(--font-heading);">Wanderløst needs your location</h2>
+                <p style="margin-bottom: 8px; color: var(--text-secondary); line-height: 1.6;">To discover hidden local gems near you, our AI Intelligence Rig needs to know where you are.</p>
+                <p style="margin-bottom: 30px; font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">Your location is never stored or shared. It's only used in real-time to find nearby secrets.</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="location-deny-btn" class="secondary-btn" style="flex: 1;">Not Now</button>
+                    <button id="location-allow-btn" class="primary-btn" style="flex: 1;"><i class="fa-solid fa-compass"></i> Allow</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Custom Notification/Alert Modal -->
         <div id="custom-modal" class="modal-backdrop hidden">
             <div class="modal-content glass-panel premium-glass scale-in" style="max-width: 400px; text-align: center; padding: 40px;">

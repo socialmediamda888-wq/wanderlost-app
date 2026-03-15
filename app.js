@@ -143,7 +143,7 @@ const btnCloseProfile = modalProfile.querySelector('.close-btn');
 const modalLegal = document.getElementById('legal-modal');
 const btnCloseLegal = modalLegal.querySelector('.close-btn');
 
-const btnOpenProfile = document.getElementById('open-profile-btn');
+// btnOpenProfile resolved safely inside init() to avoid null crash
 const historyList = document.querySelector('.history-list');
 
 const btnStartJourney = document.getElementById('start-journey-btn');
@@ -171,11 +171,16 @@ function init() {
         }, 1000); // Wait for fade out
     });
 
-    btnScan.addEventListener('click', () => {
+    const locationPermModal = document.getElementById('location-permission-modal');
+    const btnLocationAllow = document.getElementById('location-allow-btn');
+    const btnLocationDeny = document.getElementById('location-deny-btn');
+
+    // The core scan function — called only after user approves location
+    async function startScan() {
+        locationPermModal.classList.add('hidden');
         btnScan.disabled = true;
         btnScan.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Getting GPS...';
         
-        // Use real geolocation
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const { latitude, longitude } = position.coords;
@@ -239,6 +244,22 @@ ${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
             showAlert("Geolocation is not supported by your browser.", "Device Error", "fa-mobile-screen");
             btnScan.disabled = false;
         }
+    } // end startScan()
+
+    // Scan button: show branded location prompt first, then trigger GPS
+    btnScan.addEventListener('click', () => {
+        if (locationPermModal) {
+            locationPermModal.classList.remove('hidden');
+        } else {
+            startScan(); // fallback if modal not found
+        }
+    });
+
+    if (btnLocationAllow) btnLocationAllow.addEventListener('click', () => startScan());
+    if (btnLocationDeny) btnLocationDeny.addEventListener('click', () => {
+        locationPermModal.classList.add('hidden');
+        btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+        btnScan.disabled = false;
     });
 
     btnReady.addEventListener('click', () => {
@@ -289,10 +310,13 @@ ${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
         modalCheckout.classList.remove('hidden');
     });
 
-    // Profile Modal Events
-    btnOpenProfile.addEventListener('click', () => {
-        modalProfile.classList.remove('hidden');
-    });
+    // Profile Modal — resolved safely here to prevent null crash at top level
+    const btnOpenProfile = document.getElementById('open-profile-btn');
+    if (btnOpenProfile) {
+        btnOpenProfile.addEventListener('click', () => {
+            modalProfile.classList.remove('hidden');
+        });
+    }
 
     btnCloseProfile.addEventListener('click', () => {
         modalProfile.classList.add('hidden');

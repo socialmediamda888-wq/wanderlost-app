@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wanderlost-cache-v23';
+const CACHE_NAME = 'wanderlost-cache-v24';
 const urlsToCache = [
   '/wanderlost-app/',
   '/wanderlost-app/index.html',
