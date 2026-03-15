@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wanderlost-cache-v29';
+const CACHE_NAME = 'wanderlost-cache-v30';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,6 +6,78 @@ const urlsToCache = [
   './app.js',
   './manifest.json'
 ];
+
+async function startScan() {
+    const locationPermModal = document.getElementById('location-permission-modal');
+    const btnScan = document.getElementById('scan-btn');
+    
+    if (locationPermModal) locationPermModal.classList.add('hidden');
+    if (btnScan) {
+        btnScan.disabled = true;
+        btnScan.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Getting GPS...';
+    }
+    
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            if (btnScan) btnScan.innerHTML = '<i class="fa-solid fa-filter fa-spin"></i> Analyzing Culture...';
+            
+            try {
+                const response = await fetch('https://wanderlost-app.onrender.com/api/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat: latitude, lng: longitude })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    setTimeout(() => {
+                        const node = {
+                            id: Date.now(),
+                            title: result.data.title,
+                            desc: result.data.desc,
+                            lat: result.data.lat,
+                            lng: result.data.lng,
+                            x: 30 + Math.random() * 40, 
+                            y: 30 + Math.random() * 40,
+                            status: 'active'
+                        };
+                        
+                        state.nodes.push(node);
+                        state.currentNodeIndex = state.nodes.length - 1;
+                        
+                        renderNodes();
+                        showLocationDetails(node);
+                        
+                        if (btnScan) {
+                            btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                            btnScan.disabled = false;
+                        }
+                    }, 1800);
+                } else {
+                    alert(result.message || "No local gems found nearby.");
+                    if (btnScan) {
+                        btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                        btnScan.disabled = false;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                if (btnScan) {
+                    btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                    btnScan.disabled = false;
+                }
+            }
+        }, (error) => {
+            alert("Local scan failed. Please enable location services.");
+            if (btnScan) {
+                btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                btnScan.disabled = false;
+            }
+        });
+    }
+}
 
 self.addEventListener('install', event => {
   self.skipWaiting();

@@ -157,43 +157,81 @@ function init() {
     // Verify critical buttons
     const btnOpenProfile = document.getElementById('open-profile-btn');
     console.log("Dossier Button Found:", !!btnOpenProfile);
-    console.log("Welcome Modal Found:", !!modalWelcome);
+    console.log("Welcome Modal Found:", !!modalWelcome);    // Safe Event Binding Helper
+    const safeBind = (id, event, handler) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener(event, handler);
+            console.log(`Bound ${event} to #${id}`);
+        } else {
+            console.warn(`Could not find #${id} to bind ${event}`);
+        }
+    };
 
-    renderNodes();
-    
-    // Simulate panning on start
-    setTimeout(() => {
-        mapBg.classList.add('map-panning');
-    }, 100);
+    const safeBindClass = (selector, event, handler) => {
+        const els = document.querySelectorAll(selector);
+        els.forEach(el => el.addEventListener(event, handler));
+    };
 
-    // Event Listeners
-    btnStartJourney.addEventListener('click', () => {
-        modalWelcome.style.opacity = '0';
-        setTimeout(() => {
-            modalWelcome.classList.add('hidden');
-            
-            // Auto-trigger the first location after a dramatic pause
+    // Welcome Screen Flow
+    if (btnStartJourney) {
+        btnStartJourney.onclick = () => {
+            modalWelcome.style.opacity = '0';
+            modalWelcome.style.pointerEvents = 'none'; // Essential: prevent ghost blocking
             setTimeout(() => {
-                btnScan.click(); // Simulate clicking the scan button to start
-            }, 500);
-        }, 1000); // Wait for fade out
-    });
+                modalWelcome.classList.add('hidden');
+                setTimeout(() => {
+                    if (btnScan) btnScan.click();
+                }, 500);
+            }, 1000);
+        };
+    }
 
-    const locationPermModal = document.getElementById('location-permission-modal');
-    const btnLocationAllow = document.getElementById('location-allow-btn');
-    const btnLocationDeny = document.getElementById('location-deny-btn');
+    // Profile Trigger (High Priority)
+    const profileBtn = document.getElementById('open-profile-btn');
+    if (profileBtn) {
+        profileBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Opening Profile...");
+            if (modalProfile) {
+                modalProfile.classList.remove('hidden');
+                modalProfile.style.display = 'flex';
+                modalProfile.style.opacity = '1';
+                modalProfile.style.pointerEvents = 'auto';
+            }
+        };
+        // Also bind to avatar specifically just in case
+        const avatar = profileBtn.querySelector('.avatar');
+        if (avatar) avatar.onclick = (e) => {
+            e.stopPropagation();
+            profileBtn.click();
+        };
+    }
+
+    // Close Buttons
+    if (btnCloseProfile) btnCloseProfile.onclick = () => modalProfile.classList.add('hidden');
+    if (btnCloseSub) btnCloseSub.onclick = () => modalSub.classList.add('hidden');
+    if (btnCloseLegal) btnCloseLegal.onclick = () => modalLegal.classList.add('hidden');
+    if (btnCloseCheckout) btnCloseCheckout.onclick = () => {
+        modalCheckout.classList.add('hidden');
+        if (previousModalForCheckout) previousModalForCheckout.classList.remove('hidden');
+    };
 
     // The core scan function — called only after user approves location
     async function startScan() {
-        locationPermModal.classList.add('hidden');
-        btnScan.disabled = true;
-        btnScan.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Getting GPS...';
+        const locationPermModal = document.getElementById('location-permission-modal');
+        if (locationPermModal) locationPermModal.classList.add('hidden');
+        if (btnScan) {
+            btnScan.disabled = true;
+            btnScan.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> Getting GPS...';
+        }
         
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const { latitude, longitude } = position.coords;
                 
-                btnScan.innerHTML = '<i class="fa-solid fa-filter fa-spin"></i> Verifying Authenticity...';
+                if (btnScan) btnScan.innerHTML = '<i class="fa-solid fa-filter fa-spin"></i> Verifying Authenticity...';
                 
                 try {
                     // Call our new backend
@@ -206,7 +244,7 @@ function init() {
                     const result = await response.json();
                     
                     if (result.success) {
-                        btnScan.innerHTML = '<i class="fa-solid fa-microchip fa-spin"></i> Analyzing Cultural Signals...';
+                        if (btnScan) btnScan.innerHTML = '<i class="fa-solid fa-microchip fa-spin"></i> Analyzing Cultural Signals...';
                         
                         setTimeout(() => {
                             // Inject the real data into the state
@@ -229,13 +267,17 @@ function init() {
                             renderNodes();
                             showLocationDetails(node);
                             
-                            btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
-                            btnScan.disabled = false;
+                            if (btnScan) {
+                                btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                                btnScan.disabled = false;
+                            }
                         }, 1800);
                     } else {
                         await showAlert(result.message || "No local gems found nearby.", "Discovery Failed", "fa-building-circle-exclamation");
-                        btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
-                        btnScan.disabled = false;
+                        if (btnScan) {
+                            btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                            btnScan.disabled = false;
+                        }
                     }
                 } catch (err) {
                     console.error("Discovery API Error:", err);
@@ -243,182 +285,126 @@ function init() {
 
 If this is your first time scanning today, please visit your tunnel link manually in your browser to click the "Bypass" button:
 ${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
-                    btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
-                    btnScan.disabled = false;
+                    if (btnScan) {
+                        btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                        btnScan.disabled = false;
+                    }
                 }
             }, (error) => {
                 showAlert("GPS Access Denied. To discover secret spots, please enable location services in your browser settings.", "GPS Required", "fa-location-dot");
-                btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
-                btnScan.disabled = false;
+                if (btnScan) {
+                    btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
+                    btnScan.disabled = false;
+                }
             });
         } else {
             showAlert("Geolocation is not supported by your browser.", "Device Error", "fa-mobile-screen");
-            btnScan.disabled = false;
+            if (btnScan) btnScan.disabled = false;
         }
     } // end startScan()
 
-    // Scan button: show branded location prompt first, then trigger GPS
-    btnScan.addEventListener('click', () => {
-        if (locationPermModal) {
-            locationPermModal.classList.remove('hidden');
-        } else {
-            startScan(); // fallback if modal not found
+    // Discover & Scans
+    safeBind('scan-btn', 'click', () => {
+        const locationPermModal = document.getElementById('location-permission-modal');
+        if (locationPermModal) locationPermModal.classList.remove('hidden');
+        else startScan();
+    });
+
+    safeBind('location-allow-btn', 'click', () => startScan());
+    safeBind('location-deny-btn', 'click', () => {
+        const locationPermModal = document.getElementById('location-permission-modal');
+        if (locationPermModal) locationPermModal.classList.add('hidden');
+        if (btnScan) {
+            btnScan.disabled = false;
+            btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
         }
     });
 
-    if (btnLocationAllow) btnLocationAllow.addEventListener('click', () => startScan());
-    if (btnLocationDeny) btnLocationDeny.addEventListener('click', () => {
-        locationPermModal.classList.add('hidden');
-        btnScan.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Initiate Scan';
-        btnScan.disabled = false;
-    });
-
-    btnReady.addEventListener('click', () => {
+    // Core Discovery Actions
+    safeBind('ready-btn', 'click', () => {
         const node = state.nodes[state.currentNodeIndex];
-        
-        // Use coordinates or fallback to Zurich center for demo
         const lat = node.lat || 47.3769; 
         const lng = node.lng || 8.5417;
         const encodedName = encodeURIComponent(node.title);
-        
         let mapUrl = '';
-        
-        // Basic OS checking for deep linking
-        if ((navigator.platform.indexOf("iPhone") !== -1) || 
-            (navigator.platform.indexOf("iPad") !== -1) || 
-            (navigator.platform.indexOf("iPod") !== -1)) {
-            // Apple Maps
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
             mapUrl = `http://maps.apple.com/?q=${encodedName}&ll=${lat},${lng}`;
         } else {
-            // Google Maps
             mapUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
         }
-
-        // Open in new tab which triggers native app deep-links on mobile
         window.open(mapUrl, '_blank');
-        
         completeCurrentLocation();
     });
 
     let previousModalForCheckout = null;
 
-    btnSettings.addEventListener('click', async () => {
+    // Subscription & Flow
+    safeBind('settings-btn', 'click', async () => {
         if(state.isSubscribed) {
-            await showAlert("You are already a Wanderløst Elite member! Manage your subscription from your Profile Dossier.", "Active Status", "fa-user-check");
+            await showAlert("Active Status: Wanderløst Elite", "Already Member", "fa-user-check");
         } else {
-            modalSub.classList.remove('hidden');
+            if (modalSub) modalSub.classList.remove('hidden');
         }
     });
 
-    btnCloseSub.addEventListener('click', () => {
-        modalSub.classList.add('hidden');
-    });
-    
-    // Trigger Checkout
-    btnSubscribeNow.addEventListener('click', () => {
+    safeBind('subscribe-now-btn', 'click', () => {
         previousModalForCheckout = modalSub;
-        modalSub.classList.add('hidden');
-        modalCheckout.classList.remove('hidden');
+        if (modalSub) modalSub.classList.add('hidden');
+        if (modalCheckout) modalCheckout.classList.remove('hidden');
     });
 
-    // Profile Modal — force binding and high visibility
-    const profileBtn = document.getElementById('open-profile-btn');
-    if (profileBtn) {
-        profileBtn.onclick = (e) => {
-            console.log("Dossier Triggered");
-            modalProfile.classList.remove('hidden');
-            modalProfile.style.display = 'flex'; // Ensure backdrop shows
-        };
-    }
-
-    btnCloseProfile.addEventListener('click', () => {
-        modalProfile.classList.add('hidden');
-    });
-    
-    // Legal Modal Events
-    btnCloseLegal.addEventListener('click', () => {
-        modalLegal.classList.add('hidden');
-    });
-    
-    // Checkout Modal Events
-    btnCloseCheckout.addEventListener('click', () => {
-        modalCheckout.classList.add('hidden');
-        if (previousModalForCheckout) {
-            previousModalForCheckout.classList.remove('hidden');
-        }
-    });
-    
-    // Simulated Payment Processing
-    btnConfirmPayment.addEventListener('click', () => {
+    // Payment Logic
+    safeBind('confirm-payment-btn', 'click', () => {
+        const form = document.getElementById('checkout-form');
+        if(!form.checkValidity()) { form.reportValidity(); return; }
+        
         const btnText = btnConfirmPayment.querySelector('.btn-text');
         const spinner = btnConfirmPayment.querySelector('.btn-spinner');
-        
-        // Basic Validation (Mock)
-        const form = document.getElementById('checkout-form');
-        if(!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+        if (btnText) btnText.textContent = 'Verifying...';
+        if (spinner) spinner.classList.remove('hidden');
+        if (btnConfirmPayment) btnConfirmPayment.disabled = true;
 
-        // Show Loading State
-        btnText.textContent = 'Processing...';
-        spinner.classList.remove('hidden');
-        btnConfirmPayment.disabled = true;
-
-        // Simulate Network Request
         setTimeout(async () => {
-            // Success State
-            btnText.textContent = 'Payment Successful';
-            spinner.classList.add('hidden');
+            if (btnText) btnText.textContent = 'Authorized';
+            if (spinner) spinner.classList.add('hidden');
             state.isSubscribed = true;
-            
-            // Close after brief success delay
             setTimeout(async () => {
-                modalCheckout.classList.add('hidden');
-                previousModalForCheckout = null;
-                await showAlert("Welcome to Wanderløst Elite! Your location discovery limits have been lifted.", "Membership Active", "fa-crown");
-                
-                // Reset button for future reference
-                btnConfirmPayment.disabled = false;
-                btnText.textContent = 'Pay 20.00 CHF';
+                if (modalCheckout) modalCheckout.classList.add('hidden');
+                await showAlert("Welcome to Elite.", "Membership Active", "fa-crown");
+                if (btnConfirmPayment) {
+                    btnConfirmPayment.disabled = false;
+                    if (btnText) btnText.textContent = 'Pay 20.00 CHF';
+                }
             }, 800);
         }, 2000);
     });
-    
-    // Wire up dummy payments/terms buttons purely for visual feel closing
-    document.getElementById('manage-payments-btn').addEventListener('click', async () => {
-        if(state.isSubscribed) {
-             await showAlert("Current Plan: Wanderløst Elite\nStatus: Active\nNext Billing Date: " + new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString(), "Payment Info", "fa-credit-card");
-        } else {
-             previousModalForCheckout = modalProfile;
-             modalProfile.classList.add('hidden');
-             modalCheckout.classList.remove('hidden'); // Lead directly to checkout as convenience
+
+    // Footer Links (Safe Bindings)
+    safeBind('manage-payments-btn', 'click', async () => {
+        if(state.isSubscribed) await showAlert("Plan: Elite\nRenewal: Monthly", "Subscription", "fa-credit-card");
+        else { 
+            if (modalProfile) modalProfile.classList.add('hidden'); 
+            if (modalSub) modalSub.classList.remove('hidden'); 
         }
     });
     
-    document.getElementById('terms-btn').addEventListener('click', () => {
-        modalProfile.classList.add('hidden');
-        modalLegal.classList.remove('hidden');
+    safeBind('terms-btn', 'click', () => {
+        if (modalProfile) modalProfile.classList.add('hidden');
+        if (modalLegal) modalLegal.classList.remove('hidden');
     });
-    
-    // Danger Actions (Mocked)
-    document.getElementById('cancel-membership-btn').addEventListener('click', async () => {
-        const confirmed = await showConfirm("Are you sure you want to cancel Wanderløst Elite? You will lose access to detailed locations and badges at the end of your billing cycle.", "Cancel Membership", "fa-triangle-exclamation");
-        if(confirmed) {
-            await showAlert("Membership cancellation requested. You will receive an email confirmation shortly.", "Request Received", "fa-paper-plane");
-        }
+
+    safeBind('cancel-membership-btn', 'click', async () => {
+        const confirmed = await showConfirm("Cancel Elite membership?", "Confirmation", "fa-ban");
+        if(confirmed) await showAlert("Request sent.", "Membership", "fa-check");
     });
-    
-    document.getElementById('delete-data-btn').addEventListener('click', async () => {
-        const confirmed = await showConfirm("DANGER: This will permanently delete your travel trail and all badges. This action cannot be undone.", "Delete All Data", "fa-radiation");
-        if(confirmed) {
-            await showAlert("Your dossier has been purged from our secure servers.", "Data Deleted", "fa-trash-can");
-            location.reload();
-        }
+
+    safeBind('delete-data-btn', 'click', async () => {
+        const confirmed = await showConfirm("Permanently delete travel trails?", "Danger", "fa-trash");
+        if(confirmed) { await showAlert("Dossier purged.", "Deleted", "fa-trash"); location.reload(); }
     });
-    
+
     // Clear the dummy HTML history on init so it's accurate to the state
-    historyList.innerHTML = `<p class="history-empty hidden">No secrets uncovered yet.</p>`;
+    if (historyList) historyList.innerHTML = `<p class="history-empty hidden">No secrets uncovered yet.</p>`;
     
     // Set Dynamic Renewal Date for compliance
     const renewalEl = document.getElementById('dynamic-renewal-date');
@@ -429,10 +415,18 @@ ${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
     }
 
     // Collapse Card Logic
-    const btnCollapse = document.getElementById('collapse-btn');
-    btnCollapse.addEventListener('click', () => {
-        locationCard.classList.toggle('is-collapsed');
+    safeBind('collapse-btn', 'click', () => {
+        if (locationCard) locationCard.classList.toggle('is-collapsed');
     });
+    
+    renderNodes();
+    
+    // Simulate panning on start
+    if (mapBg) {
+        setTimeout(() => {
+            mapBg.classList.add('map-panning');
+        }, 100);
+    }
 }
 
 function renderNodes() {

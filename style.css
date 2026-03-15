@@ -69,7 +69,11 @@ body, html {
     position: relative;
     z-index: 100 !important; /* Above fog and map */
     pointer-events: none;
-    height: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
 }
 
 #ui-layer > * {
@@ -79,10 +83,20 @@ body, html {
 #open-profile-btn {
     position: relative;
     z-index: 110 !important;
+    cursor: pointer;
 }
 
 .modal-backdrop {
-    z-index: 200 !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(30,30,26,0.85);
+    backdrop-filter: blur(4px);
+    z-index: 500 !important; /* Way above everything else */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* Typography */
@@ -295,21 +309,7 @@ h1, h2, h3, h4 {
     mix-blend-mode: multiply; /* Blends the warm paper color and grain into the map */
 }
 
-/* UI Layer */
-#ui-layer {
-    position: relative;
-    z-index: 5;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    justify-content: space-between;
-    padding: 24px;
-    pointer-events: none;
-}
-
-#ui-layer > * {
-    pointer-events: auto;
-}
+/* UI Layer positioning removed as it is now at the top of file */
 
 /* Top HUD */
 .hud-top {
@@ -572,19 +572,7 @@ button {
     100% { transform: rotate(180deg) scale(1.5); opacity: 0; }
 }
 
-/* Modals */
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(30,30,26,0.85);
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    transition: opacity 0.3s ease;
-}
+/* Modals handled at top of file */
 
 .modal-content {
     width: 100%;
