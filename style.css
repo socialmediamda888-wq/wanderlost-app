@@ -1398,3 +1398,16 @@ button {
     display: inline-block;
     transform: translateY(5px);
 }
+
+.hidden { display: none !important; }
+
+.brand-logo-main .elegant-w {
+    animation: splashGlow 3s infinite alternate;
+    font-size: 1.8em !important;
+    margin-right: -15px !important;
+}
+
+@keyframes splashGlow {
+    from { text-shadow: 0 0 10px rgba(210, 125, 45, 0.2); transform: scale(1) translateY(5px); }
+    to { text-shadow: 0 0 30px rgba(210, 125, 45, 0.6); transform: scale(1.1) translateY(5px); }
+}

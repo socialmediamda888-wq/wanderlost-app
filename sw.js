@@ -1,15 +1,14 @@
-const CACHE_NAME = 'wanderlost-cache-v25';
+const CACHE_NAME = 'wanderlost-cache-v26';
 const urlsToCache = [
-  '/wanderlost-app/',
-  '/wanderlost-app/index.html',
-  '/wanderlost-app/style.css',
-  '/wanderlost-app/app.js',
-  '/wanderlost-app/manifest.json',
-  '/wanderlost-app/icon-192.png',
-  '/wanderlost-app/icon-512.png'
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -19,8 +18,10 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
+  clients.claim();
   event.waitUntil(
     caches.keys().then(cacheNames => {
+
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {

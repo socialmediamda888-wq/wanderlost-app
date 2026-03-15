@@ -106,19 +106,19 @@ function showConfirm(message, title = "Confirmation", icon = "fa-circle-question
 }
 
 // DOM Elements
-const nodesContainer = document.getElementById('nodes-container');
-const trailSvg = document.getElementById('trail-svg');
-const fogOverlay = document.getElementById('fog-overlay');
-let locationCard, idlePrompt, locTitle, locDesc, progressFill, badges, mapBg;
-let btnReady, btnScan, btnSettings, modalSub, btnCloseSub, btnSubscribeNow;
-let modalCheckout, btnCloseCheckout, btnConfirmPayment;
-let modalProfile, btnCloseProfile;
-let modalLegal, btnCloseLegal;
+let nodesContainer, trailSvg, fogOverlay;
 let historyList, btnStartJourney, modalWelcome;
 
 // Initialize
 function init() {
-    // Bind DOM elements safely
+    console.log("Wanderløst Intelligence Rig: Initializing DOM...");
+    
+    // Bind core layers
+    nodesContainer = document.getElementById('nodes-container');
+    trailSvg = document.getElementById('trail-svg');
+    fogOverlay = document.getElementById('fog-overlay');
+    
+    // Bind UI elements safely
     locationCard = document.getElementById('location-card');
     idlePrompt = document.getElementById('idle-prompt');
     locTitle = document.getElementById('loc-title');
@@ -148,6 +148,11 @@ function init() {
     historyList = document.querySelector('.history-list');
     btnStartJourney = document.getElementById('start-journey-btn');
     modalWelcome = document.getElementById('welcome-modal');
+
+    // Verify critical buttons
+    const btnOpenProfile = document.getElementById('open-profile-btn');
+    console.log("Dossier Button Found:", !!btnOpenProfile);
+    console.log("Welcome Modal Found:", !!modalWelcome);
 
     renderNodes();
     
@@ -309,7 +314,7 @@ ${state.BACKEND_URL}`, "Connection Error", "fa-tower-broadcast");
     });
 
     // Profile Modal — resolved safely here to prevent null crash at top level
-    const btnOpenProfile = document.getElementById('open-profile-btn');
+    btnOpenProfile = document.getElementById('open-profile-btn');
     if (btnOpenProfile) {
         btnOpenProfile.addEventListener('click', () => {
             modalProfile.classList.remove('hidden');
