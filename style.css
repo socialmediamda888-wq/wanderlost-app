@@ -1358,3 +1358,43 @@ button {
         font-size: 0.9rem;
     }
 }
+
+/* Premium Branding - Elegant W */
+.elegant-w {
+    font-family: var(--font-heading);
+    color: var(--accent-vintage);
+    font-weight: 900;
+    font-size: 1.4em;
+    vertical-align: baseline;
+    font-style: italic;
+    letter-spacing: -2px;
+}
+
+.brand-logo-main {
+    font-size: 3.5rem;
+    color: var(--text-inverse);
+    margin-bottom: 5px;
+}
+
+.poster-logo-container {
+    padding: 60px 20px;
+    border-top: 1px solid var(--vintage-border-dim);
+    border-bottom: 1px solid var(--vintage-border-dim);
+    margin-bottom: 40px;
+}
+
+.poster-top-line, .poster-bottom-line {
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 4px;
+    font-size: 0.7rem;
+    color: var(--accent-vintage);
+    opacity: 0.8;
+}
+
+.poster-lockup .elegant-w {
+    font-size: 1.2em;
+    margin-right: -10px;
+    display: inline-block;
+    transform: translateY(5px);
+}

@@ -35,15 +35,7 @@ window.initMap = function() {
         ]
     });
 
-    // Attempt to center on user
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            map.setCenter(userPos);
-        }, () => {
-            console.log("Map: User denied location, staying on default.");
-        });
-    }
+    // Map initialization is now purely visual; location is handled via the Scan button.
 };
 
 // State Management
@@ -117,40 +109,46 @@ function showConfirm(message, title = "Confirmation", icon = "fa-circle-question
 const nodesContainer = document.getElementById('nodes-container');
 const trailSvg = document.getElementById('trail-svg');
 const fogOverlay = document.getElementById('fog-overlay');
-const locationCard = document.getElementById('location-card');
-const idlePrompt = document.getElementById('idle-prompt');
-const locTitle = document.getElementById('loc-title');
-const locDesc = document.getElementById('loc-desc');
-const progressFill = document.querySelector('.progress-fill');
-const badges = document.querySelectorAll('.badges-mini i');
-const mapBg = document.getElementById('map-bg');
-
-// Buttons
-const btnReady = document.getElementById('ready-btn');
-const btnScan = document.getElementById('scan-btn');
-const btnSettings = document.getElementById('settings-btn');
-const modalSub = document.getElementById('subscription-modal');
-const btnCloseSub = modalSub.querySelector('.close-btn');
-const btnSubscribeNow = document.getElementById('subscribe-now-btn');
-
-const modalCheckout = document.getElementById('checkout-modal');
-const btnCloseCheckout = modalCheckout.querySelector('.close-btn');
-const btnConfirmPayment = document.getElementById('confirm-payment-btn');
-
-const modalProfile = document.getElementById('profile-modal');
-const btnCloseProfile = modalProfile.querySelector('.close-btn');
-
-const modalLegal = document.getElementById('legal-modal');
-const btnCloseLegal = modalLegal.querySelector('.close-btn');
-
-// btnOpenProfile resolved safely inside init() to avoid null crash
-const historyList = document.querySelector('.history-list');
-
-const btnStartJourney = document.getElementById('start-journey-btn');
-const modalWelcome = document.getElementById('welcome-modal');
+let locationCard, idlePrompt, locTitle, locDesc, progressFill, badges, mapBg;
+let btnReady, btnScan, btnSettings, modalSub, btnCloseSub, btnSubscribeNow;
+let modalCheckout, btnCloseCheckout, btnConfirmPayment;
+let modalProfile, btnCloseProfile;
+let modalLegal, btnCloseLegal;
+let historyList, btnStartJourney, modalWelcome;
 
 // Initialize
 function init() {
+    // Bind DOM elements safely
+    locationCard = document.getElementById('location-card');
+    idlePrompt = document.getElementById('idle-prompt');
+    locTitle = document.getElementById('loc-title');
+    locDesc = document.getElementById('loc-desc');
+    progressFill = document.querySelector('.progress-fill');
+    badges = document.querySelectorAll('.badges-mini i');
+    mapBg = document.getElementById('map-bg');
+    
+    btnReady = document.getElementById('ready-btn');
+    btnScan = document.getElementById('scan-btn');
+    btnSettings = document.getElementById('settings-btn');
+    
+    modalSub = document.getElementById('subscription-modal');
+    if (modalSub) btnCloseSub = modalSub.querySelector('.close-btn');
+    btnSubscribeNow = document.getElementById('subscribe-now-btn');
+    
+    modalCheckout = document.getElementById('checkout-modal');
+    if (modalCheckout) btnCloseCheckout = modalCheckout.querySelector('.close-btn');
+    btnConfirmPayment = document.getElementById('confirm-payment-btn');
+    
+    modalProfile = document.getElementById('profile-modal');
+    if (modalProfile) btnCloseProfile = modalProfile.querySelector('.close-btn');
+    
+    modalLegal = document.getElementById('legal-modal');
+    if (modalLegal) btnCloseLegal = modalLegal.querySelector('.close-btn');
+    
+    historyList = document.querySelector('.history-list');
+    btnStartJourney = document.getElementById('start-journey-btn');
+    modalWelcome = document.getElementById('welcome-modal');
+
     renderNodes();
     
     // Simulate panning on start
