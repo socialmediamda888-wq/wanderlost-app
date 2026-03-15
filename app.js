@@ -58,8 +58,8 @@ const state = {
     ],
     currentNodeIndex: -1,
     isSubscribed: false,
-    // YOUR LIVE TUNNEL LINK — Update this whenever your tunnel URL changes
-    BACKEND_URL: 'https://fuzzy-cars-tap.loca.lt' 
+    // PERMANENT BACKEND URL (Render.com — never changes!)
+    BACKEND_URL: 'https://wanderlost-app.onrender.com' 
 };
 
 // Custom Modal System (To hide domain and match aesthetic)
