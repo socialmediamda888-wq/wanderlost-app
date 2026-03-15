@@ -187,27 +187,32 @@ function init() {
         };
     }
 
-    // Profile Trigger (High Priority)
+    // Profile Trigger (Nuclear Priority)
     const profileBtn = document.getElementById('open-profile-btn');
+    const openProfile = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        console.log("Opening Profile (Priority Handler)...");
+        if (modalProfile) {
+            modalProfile.classList.remove('hidden');
+            modalProfile.style.display = 'flex';
+            modalProfile.style.opacity = '1';
+            modalProfile.style.pointerEvents = 'auto';
+        }
+    };
+
     if (profileBtn) {
-        profileBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log("Opening Profile...");
-            if (modalProfile) {
-                modalProfile.classList.remove('hidden');
-                modalProfile.style.display = 'flex';
-                modalProfile.style.opacity = '1';
-                modalProfile.style.pointerEvents = 'auto';
-            }
-        };
-        // Also bind to avatar specifically just in case
+        profileBtn.onclick = openProfile;
         const avatar = profileBtn.querySelector('.avatar');
-        if (avatar) avatar.onclick = (e) => {
-            e.stopPropagation();
-            profileBtn.click();
-        };
+        if (avatar) avatar.onclick = openProfile;
     }
+
+    // Universal Fallback for mobile/stubborn layers
+    window.addEventListener('click', (e) => {
+        if (e.target.closest('#open-profile-btn') || e.target.closest('.avatar')) {
+            console.log("Caught Profile Click via Window Fallback");
+            openProfile(e);
+        }
+    });
 
     // Close Buttons
     if (btnCloseProfile) btnCloseProfile.onclick = () => modalProfile.classList.add('hidden');

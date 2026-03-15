@@ -77,12 +77,12 @@ body, html {
 }
 
 #ui-layer > * {
-    pointer-events: auto;
+    pointer-events: auto !important; /* Force priority */
 }
 
 #open-profile-btn {
     position: relative;
-    z-index: 110 !important;
+    z-index: 200 !important; /* Explicitly above HUD line */
     cursor: pointer;
 }
 
@@ -91,12 +91,12 @@ body, html {
     inset: 0;
     background: rgba(30,30,26,0.85);
     backdrop-filter: blur(4px);
-    z-index: 500 !important; /* Way above everything else */
+    z-index: 500 !important; 
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease;
 }
 
 /* Typography */
