@@ -16,67 +16,50 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; }
-
-    /* Map fills the screen */
-    #map { position: absolute; inset: 0; z-index: 0; }
+    #map { position: absolute; inset: 0; }
 
     /*
-     * OVERLAY LAYER — sits on top of Google Maps.
-     * This is a full-screen div that captures no pointer events itself,
-     * but its children (scrims + UI) are positioned above the map.
-     * The key: this div has a HIGHER z-index than anything Google Maps creates.
+     * GLASS — darker background + heavy box-shadow = readable on any map.
+     * This is the ONLY thing needed. No scrims, no overlays.
      */
-    #overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 1000000;
-      pointer-events: none;
-      /* isolation ensures this stacking context is independent */
-      isolation: isolate;
-    }
-    /* Re-enable pointer events on interactive children */
-    #overlay > *:not(.scrim) { pointer-events: auto; }
-
-    /* Scrims */
-    .scrim { pointer-events: none; position: absolute; left: 0; right: 0; }
-    .scrim-top {
-      top: 0; height: 180px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 50%, transparent 100%);
-    }
-    .scrim-bottom {
-      bottom: 0; height: 240px;
-      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.30) 45%, transparent 100%);
-    }
-
-    /* Enhanced Lens Glass */
-    .lens {
-      background: rgba(255,255,255,0.10);
+    .glass {
+      background: rgba(20, 20, 30, 0.55);
       backdrop-filter: blur(40px) saturate(150%);
       -webkit-backdrop-filter: blur(40px) saturate(150%);
-      border: 1px solid rgba(255,255,255,0.15);
-      box-shadow: 0 25px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.4),
+        0 2px 8px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.1);
     }
-    .lens-dark {
-      background: rgba(10,10,20,0.65);
+    .glass-dark {
+      background: rgba(10,10,20,0.75);
       backdrop-filter: blur(40px) saturate(150%);
       -webkit-backdrop-filter: blur(40px) saturate(150%);
       border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
     }
 
-    /* Text Legibility */
-    .txt       { color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
-    .txt-muted { color: rgba(255,255,255,0.7); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
-    .txt-dim   { color: rgba(255,255,255,0.45); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); }
+    /* Text — white with text-shadow for guaranteed legibility */
+    .glass span, .glass a, .glass p, .glass h2, .glass h3 { text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+    .glass-dark span, .glass-dark a, .glass-dark p, .glass-dark h2, .glass-dark h3 { text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 
-    /* Scrollbar hide */
+    /* Scrollbar */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     /* Category buttons */
-    .cat-btn { transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+    .cat-btn {
+      transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
     .cat-btn:hover { transform: scale(1.05); }
-    .cat-btn.active { background: rgba(255,255,255,0.95) !important; color: #111 !important; box-shadow: 0 4px 20px rgba(0,0,0,0.2); filter: none; }
+    .cat-btn.active {
+      background: rgba(255,255,255,0.95) !important;
+      color: #111 !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      text-shadow: none;
+    }
 
     /* Discover button */
     .discover-btn { transition: transform 0.15s ease; }
@@ -104,50 +87,41 @@
 </head>
 <body>
 
-<!-- LAYER 0: Google Map -->
+<!-- Map -->
 <div id="map"></div>
 
-<!-- LAYER 1: Everything else — scrims + UI — all inside one overlay -->
-<div id="overlay">
+<!-- Logo -->
+<div id="logo" class="absolute top-4 left-4 glass rounded-2xl px-4 py-2.5 flex items-center gap-2.5 fade-in" style="z-index:10;animation-delay:0.8s;opacity:0">
+  <i data-lucide="compass" class="text-white" style="width:20px;height:20px;stroke-width:2"></i>
+  <span class="text-white font-bold text-lg tracking-tight">Wanderlost</span>
+</div>
 
-  <!-- Scrims (non-interactive gradient overlays) -->
-  <div class="scrim scrim-top"></div>
-  <div class="scrim scrim-bottom"></div>
+<!-- Credits Badge -->
+<div id="credits-badge" class="absolute top-4 right-4 glass rounded-full px-4 py-2 flex items-center gap-2 fade-in" style="z-index:10;animation-delay:1s;opacity:0">
+  <i data-lucide="zap" id="credits-icon" class="text-amber-300" style="width:14px;height:14px;stroke-width:2.5"></i>
+  <span id="credits-text" class="text-white/90 text-sm font-medium">3 Free Discoveries</span>
+</div>
 
-  <!-- Logo -->
-  <div id="logo" class="absolute top-4 left-4 lens rounded-2xl px-4 py-2.5 flex items-center gap-2.5 fade-in" style="animation-delay:0.8s;opacity:0">
-    <i data-lucide="compass" class="txt" style="width:20px;height:20px;stroke-width:2"></i>
-    <span class="txt font-bold text-lg tracking-tight">Wanderlost</span>
-  </div>
+<!-- Category Strip -->
+<div id="category-strip" class="absolute left-4 right-4 fade-in" style="z-index:10;top:68px;animation-delay:1.2s;opacity:0">
+  <div class="glass rounded-2xl p-2 overflow-x-auto no-scrollbar flex gap-2"></div>
+</div>
 
-  <!-- Credits Badge -->
-  <div id="credits-badge" class="absolute top-4 right-4 lens rounded-full px-4 py-2 flex items-center gap-2 fade-in" style="animation-delay:1s;opacity:0">
-    <i data-lucide="zap" id="credits-icon" style="width:14px;height:14px;stroke-width:2.5;color:#fcd34d;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4))"></i>
-    <span id="credits-text" class="txt-muted text-sm font-medium">3 Free Discoveries</span>
-  </div>
+<!-- Bottom HUD -->
+<div id="hud" class="absolute left-4 right-4 flex justify-center" style="z-index:10;bottom:32px"></div>
 
-  <!-- Category Strip -->
-  <div id="category-strip" class="absolute left-4 right-4 fade-in" style="top:68px;animation-delay:1.2s;opacity:0">
-    <div class="lens rounded-2xl p-2 overflow-x-auto no-scrollbar flex gap-2"></div>
-  </div>
-
-  <!-- Bottom HUD -->
-  <div id="hud" class="absolute left-4 right-4 flex justify-center" style="bottom:32px"></div>
-
-</div><!-- /overlay -->
-
-<!-- PAYWALL MODAL (above everything) -->
-<div id="paywall" class="absolute inset-0 flex items-end justify-center pb-8" style="z-index:2000000;display:none!important;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)">
-  <div class="paywall-card lens-dark rounded-3xl p-8 w-full max-w-sm text-center mx-4">
+<!-- Paywall -->
+<div id="paywall" class="absolute inset-0 flex items-end justify-center pb-8 z-50" style="display:none!important;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)">
+  <div class="paywall-card glass-dark rounded-3xl p-8 w-full max-w-sm text-center mx-4">
     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background:rgba(255,255,255,0.1)">
-      <i data-lucide="lock" class="txt" style="width:28px;height:28px"></i>
+      <i data-lucide="lock" class="text-white" style="width:28px;height:28px"></i>
     </div>
-    <h3 class="txt text-2xl font-bold mb-2">Unlock Premium</h3>
-    <p class="txt-dim text-sm mb-6 leading-relaxed">You've used all your free discoveries. Upgrade for unlimited access to all 13 categories.</p>
+    <h3 class="text-white text-2xl font-bold mb-2">Unlock Premium</h3>
+    <p class="text-white/50 text-sm mb-6 leading-relaxed">You've used all your free discoveries. Upgrade for unlimited access to all 13 categories.</p>
     <button onclick="closePremium()" class="w-full rounded-2xl py-3.5 font-bold text-sm mb-3 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" style="background:#fff;color:#111">
       <i data-lucide="star" style="width:16px;height:16px"></i> Upgrade to Premium — $4.99/mo
     </button>
-    <button onclick="hidePremium()" class="w-full py-2 text-sm hover:text-white/60 transition-colors txt-dim">Maybe Later</button>
+    <button onclick="hidePremium()" class="w-full py-2 text-sm text-white/40 hover:text-white/60 transition-colors">Maybe Later</button>
   </div>
 </div>
 
@@ -249,7 +223,7 @@ function updateCredits() {
   const icon = document.getElementById('credits-icon');
   if (isPremium) {
     txt.textContent = 'Premium';
-    txt.className = 'txt text-sm font-medium';
+    txt.style.color = 'rgba(255,255,255,0.9)';
     icon.setAttribute('data-lucide', 'star');
     lucide.createIcons({ elements: [icon] });
   } else {
@@ -266,7 +240,7 @@ function renderCats() {
   CATS.forEach(cat => {
     const btn = document.createElement('button');
     const isActive = activeCategory?.label === cat.label;
-    btn.className = `cat-btn flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold lens txt-muted ${isActive ? 'active' : ''}`;
+    btn.className = `cat-btn flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white/90 ${isActive ? 'active' : ''}`;
     btn.id = `cat-${cat.label.replace(/\s+/g, '-')}`;
     btn.innerHTML = `<i data-lucide="${cat.icon}" style="width:13px;height:13px;stroke-width:2"></i>${cat.label}`;
     btn.onclick = () => {
@@ -293,7 +267,7 @@ function setHUD(state) {
 function renderDiscoverBtn(container) {
   const btn = document.createElement('button');
   btn.id = 'discover-btn';
-  btn.className = 'discover-btn lens rounded-full px-8 py-4 flex items-center gap-3 txt sheet-morph';
+  btn.className = 'discover-btn glass rounded-full px-8 py-4 flex items-center gap-3 text-white sheet-morph';
   btn.innerHTML = `<i data-lucide="navigation" style="width:20px;height:20px;stroke-width:2"></i>
     <span class="text-base font-semibold tracking-wide">Discover Places</span>`;
   btn.onclick = handleDiscover;
@@ -306,13 +280,13 @@ function renderSheet(container) {
   const mapsUrl = `https://www.google.com/maps/place/?q=place_id:${selectedPlace.placeId}`;
   const sheet = document.createElement('div');
   sheet.id = 'discovery-sheet';
-  sheet.className = 'lens-dark rounded-3xl p-6 w-full sheet-morph';
+  sheet.className = 'glass-dark rounded-3xl p-6 w-full sheet-morph';
   sheet.style.maxWidth = '420px';
   sheet.innerHTML = `
     <div class="flex justify-between items-start mb-4">
       <div style="max-width:280px">
-        <p class="txt-dim text-xs uppercase tracking-widest mb-1" style="letter-spacing:0.15em">${selectedPlace.category}</p>
-        <h2 class="txt text-xl font-bold leading-tight">${selectedPlace.name}</h2>
+        <p class="text-white/50 text-xs uppercase tracking-widest mb-1" style="letter-spacing:0.15em">${selectedPlace.category}</p>
+        <h2 class="text-white text-xl font-bold leading-tight">${selectedPlace.name}</h2>
       </div>
       <div class="flex gap-2 ml-2 flex-shrink-0">
         <button id="col-btn" title="Collapse (V)" class="w-8 h-8 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity" style="background:rgba(255,255,255,0.1)">
@@ -324,11 +298,11 @@ function renderSheet(container) {
       </div>
     </div>
     <div class="space-y-2 mb-5">
-      <div class="flex items-center gap-2 text-sm txt-muted">
+      <div class="flex items-center gap-2 text-sm text-white/70">
         <i data-lucide="navigation" style="width:14px;height:14px;flex-shrink:0"></i>
         <span>${fmt(selectedPlace.distance)} away from you</span>
       </div>
-      <div class="flex items-start gap-2 text-sm txt-muted">
+      <div class="flex items-start gap-2 text-sm text-white/70">
         <i data-lucide="map-pin" style="width:14px;height:14px;flex-shrink:0;margin-top:2px"></i>
         <span>${selectedPlace.address || 'Address unavailable'}</span>
       </div>
@@ -343,9 +317,9 @@ function renderSheet(container) {
       </button>
     </div>
     <div class="flex gap-3 mt-3 justify-center">
-      <span class="txt-dim" style="font-size:11px">V to collapse</span>
-      <span class="txt-dim" style="font-size:11px">·</span>
-      <span class="txt-dim" style="font-size:11px">X to dismiss</span>
+      <span class="text-white/30" style="font-size:11px">V to collapse</span>
+      <span class="text-white/30" style="font-size:11px">·</span>
+      <span class="text-white/30" style="font-size:11px">X to dismiss</span>
     </div>`;
   container.appendChild(sheet);
   document.getElementById('col-btn').onclick = () => setHUD('pill');
@@ -362,7 +336,7 @@ function renderSheet(container) {
 function renderPill(container) {
   if (!selectedPlace) return;
   const pill = document.createElement('button');
-  pill.className = 'lens rounded-full px-5 py-3 flex items-center gap-2 txt pill-morph hover:opacity-80 transition-opacity';
+  pill.className = 'glass rounded-full px-5 py-3 flex items-center gap-2 text-white pill-morph hover:opacity-80 transition-opacity';
   pill.style.maxWidth = '320px';
   pill.innerHTML = `<i data-lucide="map-pin" style="width:15px;height:15px;flex-shrink:0"></i>
     <span class="text-sm font-medium truncate">${selectedPlace.name}</span>
@@ -410,7 +384,7 @@ function handleDiscover() {
 
 // ─── PAYWALL ───
 function showPremium() {
-  document.getElementById('paywall').style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem;z-index:2000000;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)';
+  document.getElementById('paywall').style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem;z-index:50;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)';
 }
 function hidePremium() { document.getElementById('paywall').style.cssText = 'display:none!important'; }
 function closePremium() { isPremium = true; credits = 999; updateCredits(); hidePremium(); }
