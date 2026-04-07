@@ -17,10 +17,38 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; }
 
-    /* ── Map ── */
-    #map { position: absolute; inset: 0; }
+    /* Map fills the screen */
+    #map { position: absolute; inset: 0; z-index: 0; }
 
-    /* ── Enhanced Lens Glass ── */
+    /*
+     * OVERLAY LAYER — sits on top of Google Maps.
+     * This is a full-screen div that captures no pointer events itself,
+     * but its children (scrims + UI) are positioned above the map.
+     * The key: this div has a HIGHER z-index than anything Google Maps creates.
+     */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1000000;
+      pointer-events: none;
+      /* isolation ensures this stacking context is independent */
+      isolation: isolate;
+    }
+    /* Re-enable pointer events on interactive children */
+    #overlay > *:not(.scrim) { pointer-events: auto; }
+
+    /* Scrims */
+    .scrim { pointer-events: none; position: absolute; left: 0; right: 0; }
+    .scrim-top {
+      top: 0; height: 180px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 50%, transparent 100%);
+    }
+    .scrim-bottom {
+      bottom: 0; height: 240px;
+      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.30) 45%, transparent 100%);
+    }
+
+    /* Enhanced Lens Glass */
     .lens {
       background: rgba(255,255,255,0.10);
       backdrop-filter: blur(40px) saturate(150%);
@@ -36,80 +64,80 @@
       box-shadow: 0 25px 50px rgba(0,0,0,0.4);
     }
 
-    /* ── Text Legibility (drop-shadow for 100% readability) ── */
+    /* Text Legibility */
     .txt       { color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
     .txt-muted { color: rgba(255,255,255,0.7); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
     .txt-dim   { color: rgba(255,255,255,0.45); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); }
 
-    /* ── Scrollbar hide ── */
+    /* Scrollbar hide */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* ── Category buttons ── */
+    /* Category buttons */
     .cat-btn { transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
     .cat-btn:hover { transform: scale(1.05); }
     .cat-btn.active { background: rgba(255,255,255,0.95) !important; color: #111 !important; box-shadow: 0 4px 20px rgba(0,0,0,0.2); filter: none; }
 
-    /* ── Discover button ── */
+    /* Discover button */
     .discover-btn { transition: transform 0.15s ease; }
     .discover-btn:hover { transform: scale(1.05); }
     .discover-btn:active { transform: scale(0.96); }
 
-    /* ── Animations ── */
+    /* Animations */
     @keyframes sheetMorph { from { opacity:0; transform: scale(0.85) translateY(30px); } to { opacity:1; transform: scale(1) translateY(0); } }
     .sheet-morph { animation: sheetMorph 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-
     @keyframes pillMorph { from { opacity:0; transform: scale(0.8); } to { opacity:1; transform: scale(1); } }
     .pill-morph { animation: pillMorph 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-
     @keyframes fadeIn { from { opacity:0; transform: translateY(-15px); } to { opacity:1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.6s ease forwards; }
-
     @keyframes sonar { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(3); opacity: 0; } }
     .sonar-ring { animation: sonar 2s ease-out infinite; }
-
     @keyframes glowPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
     .user-glow { animation: glowPulse 2.5s ease-in-out infinite; }
-
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinning { animation: spin 1s linear infinite; }
-
     @keyframes cardBounce { from { opacity:0; transform: scale(0.7) translateY(40px); } to { opacity:1; transform: scale(1) translateY(0); } }
     .paywall-card { animation: cardBounce 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-
     .save-btn.saved { background: rgba(244,63,94,0.9) !important; color: #fff !important; }
     .credits-critical { color: #f87171 !important; }
   </style>
 </head>
 <body>
 
-<!-- ═══ MAP ═══ -->
+<!-- LAYER 0: Google Map -->
 <div id="map"></div>
 
-<!-- ═══ UI LAYER ═══ -->
+<!-- LAYER 1: Everything else — scrims + UI — all inside one overlay -->
+<div id="overlay">
 
-<!-- TOP LEFT: Logo -->
-<div id="logo" class="absolute top-4 left-4 lens rounded-2xl px-4 py-2.5 flex items-center gap-2.5 fade-in" style="z-index:200;animation-delay:0.8s;opacity:0">
-  <i data-lucide="compass" class="txt" style="width:20px;height:20px;stroke-width:2"></i>
-  <span class="txt font-bold text-lg tracking-tight">Wanderlost</span>
-</div>
+  <!-- Scrims (non-interactive gradient overlays) -->
+  <div class="scrim scrim-top"></div>
+  <div class="scrim scrim-bottom"></div>
 
-<!-- TOP RIGHT: Credits Badge -->
-<div id="credits-badge" class="absolute top-4 right-4 lens rounded-full px-4 py-2 flex items-center gap-2 fade-in" style="z-index:200;animation-delay:1s;opacity:0">
-  <i data-lucide="zap" id="credits-icon" style="width:14px;height:14px;stroke-width:2.5;color:#fcd34d;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4))"></i>
-  <span id="credits-text" class="txt-muted text-sm font-medium">3 Free Discoveries</span>
-</div>
+  <!-- Logo -->
+  <div id="logo" class="absolute top-4 left-4 lens rounded-2xl px-4 py-2.5 flex items-center gap-2.5 fade-in" style="animation-delay:0.8s;opacity:0">
+    <i data-lucide="compass" class="txt" style="width:20px;height:20px;stroke-width:2"></i>
+    <span class="txt font-bold text-lg tracking-tight">Wanderlost</span>
+  </div>
 
-<!-- CATEGORY STRIP -->
-<div id="category-strip" class="absolute left-4 right-4 fade-in" style="z-index:200;top:68px;animation-delay:1.2s;opacity:0">
-  <div class="lens rounded-2xl p-2 overflow-x-auto no-scrollbar flex gap-2"></div>
-</div>
+  <!-- Credits Badge -->
+  <div id="credits-badge" class="absolute top-4 right-4 lens rounded-full px-4 py-2 flex items-center gap-2 fade-in" style="animation-delay:1s;opacity:0">
+    <i data-lucide="zap" id="credits-icon" style="width:14px;height:14px;stroke-width:2.5;color:#fcd34d;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4))"></i>
+    <span id="credits-text" class="txt-muted text-sm font-medium">3 Free Discoveries</span>
+  </div>
 
-<!-- BOTTOM HUD -->
-<div id="hud" class="absolute left-4 right-4 flex justify-center" style="z-index:200;bottom:32px"></div>
+  <!-- Category Strip -->
+  <div id="category-strip" class="absolute left-4 right-4 fade-in" style="top:68px;animation-delay:1.2s;opacity:0">
+    <div class="lens rounded-2xl p-2 overflow-x-auto no-scrollbar flex gap-2"></div>
+  </div>
 
-<!-- PAYWALL MODAL -->
-<div id="paywall" class="absolute inset-0 flex items-end justify-center pb-8" style="z-index:500;display:none!important;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)">
+  <!-- Bottom HUD -->
+  <div id="hud" class="absolute left-4 right-4 flex justify-center" style="bottom:32px"></div>
+
+</div><!-- /overlay -->
+
+<!-- PAYWALL MODAL (above everything) -->
+<div id="paywall" class="absolute inset-0 flex items-end justify-center pb-8" style="z-index:2000000;display:none!important;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)">
   <div class="paywall-card lens-dark rounded-3xl p-8 w-full max-w-sm text-center mx-4">
     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background:rgba(255,255,255,0.1)">
       <i data-lucide="lock" class="txt" style="width:28px;height:28px"></i>
@@ -123,7 +151,6 @@
   </div>
 </div>
 
-<!-- ═══ APP LOGIC ═══ -->
 <script>
 // ─── CONFIG ───
 const MAPS_API_KEY = 'AIzaSyB1RVtX565j0NYmTtFebx1nmDCrh6X0rYM';
@@ -193,25 +220,6 @@ function powerZoom(map, lat, lng) {
     map.setZoom(startZ + (endZ - startZ) * ease);
     if (t < 1) requestAnimationFrame(step);
   })(t0);
-}
-
-// ─── INJECT SCRIMS INTO MAP DOM ───
-// This is the key fix: we inject scrim divs directly into the Google Maps container
-// AFTER the map initializes, so they share the same stacking context as the map tiles.
-function injectScrims() {
-  const mapEl = document.getElementById('map');
-  // Top scrim
-  const top = document.createElement('div');
-  top.style.cssText = 'position:absolute;top:0;left:0;right:0;height:180px;' +
-    'background:linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 50%, transparent 100%);' +
-    'pointer-events:none;z-index:999999;';
-  mapEl.appendChild(top);
-  // Bottom scrim
-  const bot = document.createElement('div');
-  bot.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:240px;' +
-    'background:linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.30) 45%, transparent 100%);' +
-    'pointer-events:none;z-index:999999;';
-  mapEl.appendChild(bot);
 }
 
 // ─── MARKERS ───
@@ -340,10 +348,8 @@ function renderSheet(container) {
       <span class="txt-dim" style="font-size:11px">X to dismiss</span>
     </div>`;
   container.appendChild(sheet);
-
   document.getElementById('col-btn').onclick = () => setHUD('pill');
   document.getElementById('dis-btn').onclick = dismissSheet;
-
   const saveBtn = document.getElementById('save-btn');
   saveBtn.onclick = () => {
     const wasSaved = savedPlaces.some(s => s.placeId === selectedPlace.placeId);
@@ -372,11 +378,10 @@ function dismissSheet() {
   if (poiMarker) { poiMarker.map = null; poiMarker = null; }
 }
 
-// ─── DISCOVER HANDLER ───
+// ─── DISCOVER ───
 function handleDiscover() {
   if (!isPremium && credits <= 0) { showPremium(); return; }
   if (!placesService || !userLocation) return;
-
   const btn = document.getElementById('discover-btn');
   if (btn) {
     btn.disabled = true;
@@ -384,27 +389,18 @@ function handleDiscover() {
       <span class="text-base font-semibold">Discovering…</span>`;
     lucide.createIcons({ elements: btn.querySelectorAll('[data-lucide]') });
   }
-
   placesService.nearbySearch({
-    location: userLocation,
-    radius: 1500,
+    location: userLocation, radius: 1500,
     type: activeCategory?.type || 'point_of_interest',
   }, (results, status) => {
     if (status !== 'OK' || !results?.length) { setHUD('button'); return; }
     const place = results[Math.floor(Math.random() * Math.min(results.length, 8))];
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
+    const lat = place.geometry.location.lat(), lng = place.geometry.location.lng();
     const dist = hav(userLocation.lat, userLocation.lng, lat, lng);
-
     selectedPlace = {
-      name: place.name,
-      category: activeCategory?.label || 'Point of Interest',
-      address: place.vicinity,
-      distance: dist,
-      placeId: place.place_id,
-      lat, lng,
+      name: place.name, category: activeCategory?.label || 'Point of Interest',
+      address: place.vicinity, distance: dist, placeId: place.place_id, lat, lng,
     };
-
     if (!isPremium) { credits--; previewUsed = true; updateCredits(); }
     mapInstance?.panTo({ lat, lng });
     createPoiMarker(googleRef, mapInstance, lat, lng);
@@ -414,16 +410,10 @@ function handleDiscover() {
 
 // ─── PAYWALL ───
 function showPremium() {
-  const el = document.getElementById('paywall');
-  el.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem;z-index:500;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)';
+  document.getElementById('paywall').style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem;z-index:2000000;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px)';
 }
-function hidePremium() {
-  document.getElementById('paywall').style.cssText = 'display:none!important';
-}
-function closePremium() {
-  isPremium = true; credits = 999;
-  updateCredits(); hidePremium();
-}
+function hidePremium() { document.getElementById('paywall').style.cssText = 'display:none!important'; }
+function closePremium() { isPremium = true; credits = 999; updateCredits(); hidePremium(); }
 window.hidePremium = hidePremium;
 window.closePremium = closePremium;
 
@@ -442,7 +432,6 @@ window.initMap = async function () {
 
   const initMapAt = async (lat, lng) => {
     userLocation = { lat, lng };
-
     const map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 0, lng: 0 },
       zoom: 2,
@@ -453,16 +442,8 @@ window.initMap = async function () {
     });
     mapInstance = map;
     placesService = new google.maps.places.PlacesService(map);
-
-    // Inject scrims into the map DOM AFTER it initializes
-    // Small delay to ensure Google Maps has rendered its internal DOM
-    setTimeout(() => injectScrims(), 300);
-
-    // Power zoom
     setTimeout(() => powerZoom(map, lat, lng), 400);
-    // User marker
     setTimeout(() => createUserMarker(google, map, lat, lng), 600);
-    // Show HUD
     setTimeout(() => { updateCredits(); setHUD('button'); }, 1200);
   };
 
