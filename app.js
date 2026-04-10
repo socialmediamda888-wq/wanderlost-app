@@ -1224,3 +1224,6 @@ window.openHelpCenter = openHelpCenter;
 
 // ── Init ──
 navigateTo('map');
+
+
+/* build: 2026-04-10T18:58:04 */
