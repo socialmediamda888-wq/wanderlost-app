@@ -400,7 +400,10 @@ function renderSettings(c) {
     <!-- Support -->
     <h2 class="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-4 ml-1">Support & Legal</h2>
     <div class="bg-surface-container-lowest rounded-lg overflow-hidden mb-8 shadow-xl shadow-black/5">
-      ${[{i:'help_center',t:'Help Center & Support',a:'open_in_new'},{i:'gavel',t:'Terms & Conditions',a:'chevron_right'},{i:'shield_person',t:'Privacy & Policy',a:'chevron_right'},{i:'health_and_safety',t:'Safety Measures',a:'chevron_right'}].map(x=>`<button class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">${x.i}</span><span class="flex-1 font-bold text-sm">${x.t}</span><span class="material-symbols-outlined text-outline-variant text-lg">${x.a}</span></button>`).join('')}
+      <button onclick="window.open('mailto:support@wanderlost.app','_blank')" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">help_center</span><span class="flex-1 font-bold text-sm">Help Center & Support</span><span class="material-symbols-outlined text-outline-variant text-lg">open_in_new</span></button>
+      <button onclick="showLegal('terms')" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">gavel</span><span class="flex-1 font-bold text-sm">Terms & Conditions</span><span class="material-symbols-outlined text-outline-variant text-lg">chevron_right</span></button>
+      <button onclick="showLegal('privacy')" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">shield_person</span><span class="flex-1 font-bold text-sm">Privacy & Policy</span><span class="material-symbols-outlined text-outline-variant text-lg">chevron_right</span></button>
+      <button onclick="showLegal('safety')" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">health_and_safety</span><span class="flex-1 font-bold text-sm">Safety Measures</span><span class="material-symbols-outlined text-outline-variant text-lg">chevron_right</span></button>
     </div>
     <!-- Account Actions -->
     <h2 class="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-4 ml-1">Account Actions</h2>
@@ -496,6 +499,100 @@ function setTheme(t) {
   renderPage();
 }
 
+// ── Legal Modal ──
+const LEGAL_CONTENT = {
+  terms: {
+    icon: 'gavel',
+    label: 'Legal',
+    title: 'Terms & Conditions',
+    updated: 'Last updated: April 7, 2026',
+    sections: [
+      { h: '1. Acceptance of Terms', p: 'By downloading, accessing, or using Wanderlost, you agree to be bound by these Terms and Conditions. If you do not agree, do not use the application.' },
+      { h: '2. The Service (Discovery, Not Curation)', p: 'Wanderlost is a recommendation engine that utilizes third-party algorithms to identify high-rated locations.', list: ['<strong>No Curation:</strong> We do not manually vet, visit, or curate these locations.', '<strong>No Travel Guide:</strong> Wanderlost does not provide travel advice, safety ratings, or guided services. We provide a visual interface for public data.'] },
+      { h: '3. User Responsibility & Safety', p: 'All travel undertaken as a result of a "Discovery" is at your own risk.', list: ['<strong>Self-Directed Travel:</strong> All travel undertaken as a result of a "Discovery" is at your own risk.', '<strong>Self-Preservation:</strong> You are solely responsible for assessing the safety, legality, and accessibility of any location before and during your visit.', '<strong>Awareness:</strong> You agree to maintain situational awareness and adhere to local laws. Wanderlost is not responsible for accidents, injuries, or legal issues encountered during your journey.'] },
+      { h: '4. Subscriptions & Billing', list: ['<strong>Free Tier:</strong> Users receive 3 free "Discoveries." Once exhausted, a Premium subscription is required for further access.', '<strong>Premium Plans:</strong> $10.00/month or $100.00/year.', '<strong>Renewals:</strong> Subscriptions auto-renew through your Apple ID or Google Play account unless canceled at least 24 hours before the end of the current period.', '<strong>Refunds:</strong> All billing is handled by the respective App Stores; Wanderlost does not issue direct refunds.'] },
+      { h: '5. Account Security', p: 'You are responsible for maintaining the confidentiality of your account credentials (Email, Password). Wanderlost is not liable for unauthorized access to your account resulting from your failure to secure your login details.' },
+      { h: '6. Limitation of Liability', p: 'To the maximum extent permitted by law, Wanderlost and its creators shall not be liable for any direct, indirect, incidental, or consequential damages resulting from:', list: ['Your use of the app or reliance on its recommendations.', 'Any interactions with third-party locations or individuals at those locations.', 'Data inaccuracies or map errors provided by third-party SDKs (Google Maps).'] },
+      { h: '7. Prohibited Use', p: 'You agree not to:', list: ['Reverse engineer or scrape data from the "Neural Map."', 'Use the app for any illegal purposes or to harass others.', 'Circumvent the "3 Free Discoveries" limit through technical manipulation.'] },
+      { h: '8. Termination', p: 'We reserve the right to suspend or terminate your account if you violate these terms. You may delete your account and data at any time via the Settings menu.' },
+      { h: '9. Changes to Terms', p: 'Wanderlost may update these terms to reflect changes in the law or app features. Continued use of the app after updates constitutes acceptance of the new terms.' },
+      { h: '10. Governing Law', p: 'These terms are governed by the laws of your local jurisdiction, without regard to conflict of law principles.' },
+    ],
+  },
+  privacy: {
+    icon: 'shield_person',
+    label: 'Privacy',
+    title: 'Privacy Policy',
+    updated: 'Last updated: April 7, 2026',
+    sections: [
+      { h: '1. Data We Collect', p: 'Wanderlost collects the minimum data necessary to deliver the service:', list: ['<strong>Location Data:</strong> Used exclusively to find nearby discoveries. Not stored on our servers.', '<strong>Account Information:</strong> Email address and encrypted password for authentication.', '<strong>Usage Data:</strong> Number of discoveries used (for free-tier tracking). No browsing history is collected.'] },
+      { h: '2. Data We Do Not Collect', list: ['We do not collect contacts, photos, or files.', 'We do not track your movements or create location history.', 'We do not sell or share personal data with third parties for advertising.'] },
+      { h: '3. Third-Party Services', p: 'The app uses the Google Maps Platform to power the map and discovery interface. Google\'s own privacy policy governs their data handling. We recommend reviewing it at <em>policies.google.com/privacy</em>.' },
+      { h: '4. Data Storage & Security', list: ['Account data is encrypted at rest and in transit using industry-standard 256-bit SSL/TLS.', 'Passwords are hashed using bcrypt; we cannot see your password.', 'We use no third-party analytics, trackers, or advertising SDKs.'] },
+      { h: '5. Your Rights', p: 'You have the right to:', list: ['<strong>Access:</strong> View all data associated with your account.', '<strong>Delete:</strong> Permanently remove your account and all associated data via Settings → Delete My Account.', '<strong>Portability:</strong> Request an export of your data by contacting support.'] },
+      { h: '6. Children\'s Privacy', p: 'Wanderlost is not directed at children under 13. We do not knowingly collect data from minors. If you believe we have inadvertently collected such data, contact us for immediate removal.' },
+      { h: '7. Contact', p: 'For privacy concerns, contact us at <strong>privacy@wanderlost.app</strong>.' },
+    ],
+  },
+  safety: {
+    icon: 'health_and_safety',
+    label: 'Safety',
+    title: 'Safety Measures',
+    updated: 'Your safety is your own responsibility',
+    sections: [
+      { h: 'The Self-Preservation Principle', p: 'Wanderlost surfaces high-rated locations from public data. We do not guarantee the safety, legality, or accessibility of any discovered place. Before every journey, practice self-preservation.' },
+      { h: '1. Before You Go', list: ['<strong>Research:</strong> Read recent reviews and verify the location\'s current status online.', '<strong>Inform Someone:</strong> Share your destination with a trusted person.', '<strong>Connectivity:</strong> Ensure your phone is charged and you have signal or an offline map downloaded.', '<strong>Local Laws:</strong> Verify that visiting the location is legal, especially for natural sites, private property, or restricted areas.'] },
+      { h: '2. During Your Visit', list: ['<strong>Situational Awareness:</strong> Stay alert to your surroundings at all times.', '<strong>Trust Your Instincts:</strong> If a situation feels unsafe, leave immediately.', '<strong>Respect Locals:</strong> You are a guest. Be respectful of the community, their customs, and their property.', '<strong>Travel Light:</strong> Minimize visible valuables. Keep your phone secure.'] },
+      { h: '3. Emergency Preparedness', list: ['Know the local emergency number (112 in EU, 911 in US, etc.).', 'Carry basic first-aid supplies for remote locations.', 'Have local currency and a backup payment method.', 'Download offline maps for areas with limited connectivity.'] },
+      { h: '4. What Wanderlost Is Not', list: ['We are <strong>not</strong> a tour operator or travel agency.', 'We are <strong>not</strong> responsible for the condition, safety, or quality of any location.', 'We are <strong>not</strong> a substitute for professional travel advice or local guidance.', 'We <strong>do not</strong> verify health and safety standards of any establishment.'] },
+      { h: '5. Report a Concern', p: 'If you discover a location that poses a safety risk, please report it to us at <strong>safety@wanderlost.app</strong> so we can take appropriate action.' },
+    ],
+  },
+};
+
+function showLegal(type) {
+  const data = LEGAL_CONTENT[type];
+  if (!data) return;
+  const modal = document.getElementById('legal-modal');
+  const content = document.getElementById('legal-content');
+  content.innerHTML = `
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary">${data.icon}</span>
+        </div>
+        <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">${data.label}</span>
+      </div>
+      <h1 class="text-3xl font-extrabold tracking-tighter text-on-surface mb-2">${data.title}</h1>
+      <p class="text-on-surface-variant text-xs font-light">${data.updated}</p>
+    </div>
+    ${data.sections.map(s => `
+      <div class="mb-8">
+        <h2 class="text-base font-bold text-on-surface mb-3">${s.h}</h2>
+        ${s.p ? `<p class="text-on-surface-variant text-sm leading-relaxed mb-3">${s.p}</p>` : ''}
+        ${s.list ? `<ul class="space-y-2.5">${s.list.map(li => `
+          <li class="flex gap-3 text-sm text-on-surface-variant leading-relaxed">
+            <span class="material-symbols-outlined text-primary text-sm mt-0.5 flex-shrink-0">chevron_right</span>
+            <span>${li}</span>
+          </li>
+        `).join('')}</ul>` : ''}
+      </div>
+    `).join('')}
+    <div class="pt-6 border-t border-surface-container mt-8">
+      <p class="text-[10px] uppercase tracking-widest text-on-surface-variant/40 text-center">Wanderlost — Digital Sanctuary Project</p>
+    </div>
+  `;
+  modal.style.opacity = '1';
+  modal.style.pointerEvents = 'auto';
+  modal.scrollTop = 0;
+}
+
+function closeLegalModal() {
+  const modal = document.getElementById('legal-modal');
+  modal.style.opacity = '0';
+  modal.style.pointerEvents = 'none';
+}
+
 // ── Globals ──
 window.onMapsReady = onMapsReady;
 window.navigateTo = navigateTo;
@@ -510,6 +607,8 @@ window.completePurchase = completePurchase;
 window.showHistory = showHistory;
 window.showItinerary = showItinerary;
 window.setTheme = setTheme;
+window.showLegal = showLegal;
+window.closeLegalModal = closeLegalModal;
 
 // ── Init ──
 navigateTo('map');
