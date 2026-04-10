@@ -132,9 +132,12 @@ window.addEventListener('load', () => {
 });
 
 function onMapsReady() {
-  if (state.page === 'map') initMap();
-  _mapsReadyFlag = true;
-  checkAppReady();
+  if (state.page === 'map') {
+    initMap();
+  } else {
+    _mapsReadyFlag = true;
+    checkAppReady();
+  }
 }
 function initMap() {
   const container = document.getElementById('gmap');
@@ -146,6 +149,12 @@ function initMap() {
     disableDefaultUI: true, gestureHandling: 'greedy',
     styles: MAP_STYLE_LIGHT,
   });
+  
+  google.maps.event.addListenerOnce(gmap, 'tilesloaded', () => {
+    _mapsReadyFlag = true;
+    checkAppReady();
+  });
+
   placesService = new google.maps.places.PlacesService(gmap);
   if (!state._geoResolved) {
     state._geoResolved = true;
