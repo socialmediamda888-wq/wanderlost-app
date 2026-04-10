@@ -563,15 +563,31 @@ function renderAccount(c) {
   const isLogin = state.authTab === 'login';
   const memberType = state.isPremium ? 'Premium Explorer' : 'Standard Member';
   c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 max-w-lg mx-auto">
-    <!-- Profile Card -->
-    <div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden mb-6">
-      <div class="absolute inset-0 bg-gradient-to-br from-surface-container-highest to-surface-container"></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-      <div class="absolute bottom-6 left-6">
-        <p class="font-label text-white/70 tracking-widest text-[10px] mb-1">CURRENT STATUS</p>
-        <h2 class="text-2xl font-headline text-white font-light tracking-tight italic">${state.isPremium ? 'Premium Explorer' : 'Free Spirit'}</h2>
-      </div>
+    <!-- Auth Tabs -->
+    <div class="flex gap-8 items-end mb-6">
+      <button onclick="state.authTab='login'; navigateTo('account')" class="font-headline text-3xl ${isLogin ? 'font-light border-b-2 border-surface-tint' : 'font-extralight text-on-surface-variant'} tracking-tighter pb-1">Log In</button>
+      <button onclick="state.authTab='register'; navigateTo('account')" class="font-headline text-xl ${!isLogin ? 'font-light border-b-2 border-surface-tint' : 'font-extralight text-on-surface-variant'} tracking-tighter pb-1">Register</button>
     </div>
+    
+    <!-- Auth Form -->
+    <div class="mb-10">
+      ${isLogin ? `
+      <form onsubmit="event.preventDefault(); handleLogin(this)" class="flex flex-col gap-5">
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">IDENTITY</label><input id="login-user" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 text-on-surface placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Username" type="text" required/></div>
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">ACCESS KEY</label><input id="login-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 text-on-surface placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
+        <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">ENTER SANCTUARY</button>
+        <a href="#" onclick="event.preventDefault(); showToast('Check your email for reset instructions.')" class="text-center font-label text-[10px] tracking-widest text-on-surface-variant">FORGOT CREDENTIALS?</a>
+      </form>` : `
+      <form onsubmit="event.preventDefault(); handleRegister(this)" class="flex flex-col gap-5">
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">FULL NAME</label><input id="reg-name" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Your name" type="text" required/></div>
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">EMAIL</label><input id="reg-email" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Email address" type="email" required/></div>
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">DATE OF BIRTH</label><input id="reg-dob" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="DD/MM/YYYY" type="text"/></div>
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">PASSWORD</label><input id="reg-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
+        <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">CONFIRM PASSWORD</label><input id="reg-pass2" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Confirm password" type="password" required/></div>
+        <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">CREATE VOYAGE</button>
+      </form>`}
+    </div>
+
     <!-- Member Status -->
     <div class="p-6 rounded-lg bg-surface-container-low mb-4">
       <div class="flex justify-between items-start mb-3">
@@ -584,6 +600,7 @@ function renderAccount(c) {
       </div>
       ${!state.isPremium ? '<button onclick="showPremiumGate()" class="w-full py-3.5 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform">JOIN PREMIUM <span class="material-symbols-outlined text-sm">arrow_forward</span></button>' : '<p class="text-xs text-on-surface-variant">Next payment: May 7, 2026</p>'}
     </div>
+
     <!-- History + Itinerary -->
     <div class="grid grid-cols-2 gap-3 mb-8">
       <button onclick="showHistory()" class="flex flex-col items-center justify-center p-5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors">
@@ -593,26 +610,6 @@ function renderAccount(c) {
         <span class="material-symbols-outlined text-2xl mb-2 text-stone-500">event_note</span><span class="font-label text-[10px] tracking-widest text-stone-600">ITINERARY</span>
       </button>
     </div>
-    <!-- Auth Tabs -->
-    <div class="flex gap-8 items-end mb-6">
-      <button onclick="state.authTab='login'; navigateTo('account')" class="font-headline text-3xl ${isLogin ? 'font-light border-b-2 border-surface-tint' : 'font-extralight text-on-surface-variant'} tracking-tighter pb-1">Log In</button>
-      <button onclick="state.authTab='register'; navigateTo('account')" class="font-headline text-xl ${!isLogin ? 'font-light border-b-2 border-surface-tint' : 'font-extralight text-on-surface-variant'} tracking-tighter pb-1">Register</button>
-    </div>
-    ${isLogin ? `
-    <form onsubmit="event.preventDefault(); handleLogin(this)" class="flex flex-col gap-5">
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">IDENTITY</label><input id="login-user" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 text-on-surface placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Username" type="text" required/></div>
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">ACCESS KEY</label><input id="login-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 text-on-surface placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
-      <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">ENTER SANCTUARY</button>
-      <a href="#" onclick="event.preventDefault(); showToast('Check your email for reset instructions.')" class="text-center font-label text-[10px] tracking-widest text-on-surface-variant">FORGOT CREDENTIALS?</a>
-    </form>` : `
-    <form onsubmit="event.preventDefault(); handleRegister(this)" class="flex flex-col gap-5">
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">FULL NAME</label><input id="reg-name" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Your name" type="text" required/></div>
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">EMAIL</label><input id="reg-email" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Email address" type="email" required/></div>
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">DATE OF BIRTH</label><input id="reg-dob" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="DD/MM/YYYY" type="text"/></div>
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">PASSWORD</label><input id="reg-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
-      <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">CONFIRM PASSWORD</label><input id="reg-pass2" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Confirm password" type="password" required/></div>
-      <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">CREATE VOYAGE</button>
-    </form>`}
   </div>`;
 }
 
