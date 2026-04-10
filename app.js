@@ -17,33 +17,18 @@ const CATEGORIES = [
   { id:'store', name:'Artisan Workshops', icon:'handyman' },
 ];
 
-const MAP_STYLES = {
-  light: [
-    { elementType:'geometry', stylers:[{color:'#f2f2f0'}] },
-    { elementType:'labels.icon', stylers:[{visibility:'off'}] },
-    { elementType:'labels.text.fill', stylers:[{color:'#8c8c8c'}] },
-    { elementType:'labels.text.stroke', stylers:[{color:'#f5f5f5'}] },
-    { featureType:'poi', stylers:[{visibility:'off'}] },
-    { featureType:'road', elementType:'geometry', stylers:[{color:'#fff'}] },
-    { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
-    { featureType:'transit', stylers:[{visibility:'off'}] },
-    { featureType:'water', elementType:'geometry', stylers:[{color:'#c8d0d8'}] },
-    { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
-  ],
-  dark: [
-    { elementType:'geometry', stylers:[{color:'#1a1f20'}] },
-    { elementType:'labels.icon', stylers:[{visibility:'off'}] },
-    { elementType:'labels.text.fill', stylers:[{color:'#596061'}] },
-    { elementType:'labels.text.stroke', stylers:[{color:'#0c0f0f'}] },
-    { featureType:'poi', stylers:[{visibility:'off'}] },
-    { featureType:'road', elementType:'geometry', stylers:[{color:'#2a3031'}] },
-    { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
-    { featureType:'transit', stylers:[{visibility:'off'}] },
-    { featureType:'water', elementType:'geometry', stylers:[{color:'#0e1314'}] },
-    { featureType:'administrative', elementType:'geometry.stroke', stylers:[{color:'#333a3c'}] },
-    { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
-  ],
-};
+const MAP_STYLE_LIGHT = [
+  { elementType:'geometry', stylers:[{color:'#f2f2f0'}] },
+  { elementType:'labels.icon', stylers:[{visibility:'off'}] },
+  { elementType:'labels.text.fill', stylers:[{color:'#8c8c8c'}] },
+  { elementType:'labels.text.stroke', stylers:[{color:'#f5f5f5'}] },
+  { featureType:'poi', stylers:[{visibility:'off'}] },
+  { featureType:'road', elementType:'geometry', stylers:[{color:'#fff'}] },
+  { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
+  { featureType:'transit', stylers:[{visibility:'off'}] },
+  { featureType:'water', elementType:'geometry', stylers:[{color:'#c8d0d8'}] },
+  { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
+];
 
 // ── State ──
 let state = {
@@ -113,19 +98,15 @@ function initMap() {
   if (!container) return;
   const center = state.userLocation || { lat: 48.8566, lng: 2.3522 };
   if (!state.userLocation) state.userLocation = center;
-  const isDark = state.theme === 'dark';
-  const opts = {
-    center, zoom: state._mapZoom || 3,
+  gmap = new google.maps.Map(container, {
+    center, zoom: 15, mapId: MAP_ID,
     disableDefaultUI: true, gestureHandling: 'greedy',
-  };
-  // mapId enables cloud styling + AdvancedMarker but overrides JSON styles.
-  // In dark mode we drop mapId so our dark JSON style applies.
-  if (!isDark) opts.mapId = MAP_ID;
-  opts.styles = MAP_STYLES[state.theme];
-  gmap = new google.maps.Map(container, opts);
+    styles: MAP_STYLE_LIGHT,
+  });
   placesService = new google.maps.places.PlacesService(gmap);
   if (!state._geoResolved) {
     state._geoResolved = true;
+    gmap.setZoom(3);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         p => { state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude }; flyIn(); },
@@ -137,7 +118,7 @@ function initMap() {
     gmap.setZoom(15);
     createUserMarker();
     // Re-add discovered markers
-    state.discoveredMarkers.forEach(m => { if (m.position) addPoiMarkerAt(m.position.lat, m.position.lng); });
+    state.discoveredMarkers.forEach(m => { if (m.position) addPoiMarkerDirect(m.position.lat, m.position.lng); });
   }
 }
 function flyIn() {
@@ -150,41 +131,22 @@ function flyIn() {
   }, 25);
 }
 function createUserMarker() {
-  if (userMarker) { try { userMarker.map = null; } catch(e) { userMarker.setMap(null); } }
-  const isDark = state.theme === 'dark';
-  try {
-    const el = document.createElement('div');
-    el.style.cssText = 'position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center';
-    el.innerHTML = '<div class="sonar-glow"></div><div class="sonar-ping"></div><div class="sonar-core"></div>';
-    userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation, map: gmap, content: el });
-  } catch(e) {
-    userMarker = new google.maps.Marker({ position: state.userLocation, map: gmap, icon: {
-      path: google.maps.SymbolPath.CIRCLE, scale: 8,
-      fillColor: isDark ? '#dde4e5' : '#5f5e5e', fillOpacity: 1,
-      strokeColor: isDark ? '#333a3c' : '#fff', strokeWeight: 3,
-    }});
-  }
+  if (userMarker) userMarker.map = null;
+  const el = document.createElement('div');
+  el.style.cssText = 'position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center';
+  el.innerHTML = '<div class="sonar-glow"></div><div class="sonar-ping"></div><div class="sonar-core"></div>';
+  userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation, map: gmap, content: el });
 }
 function addPoiMarker(lat, lng) {
-  addPoiMarkerAt(lat, lng);
+  addPoiMarkerDirect(lat, lng);
   state.discoveredMarkers.push({ position: { lat, lng } });
 }
-function addPoiMarkerAt(lat, lng) {
+function addPoiMarkerDirect(lat, lng) {
   const el = document.createElement('div');
   el.style.cssText = 'position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center';
   el.innerHTML = '<div class="poi-pulse"></div><div class="poi-dot"></div>';
-  try {
-    const m = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: gmap, content: el });
-    poiMarkers.push(m);
-  } catch(e) {
-    // AdvancedMarker not available without mapId, use regular marker
-    const m = new google.maps.Marker({ position: { lat, lng }, map: gmap, icon: {
-      path: google.maps.SymbolPath.CIRCLE, scale: 7,
-      fillColor: state.theme === 'dark' ? '#dde4e5' : '#5f5e5e', fillOpacity: 1,
-      strokeColor: state.theme === 'dark' ? '#333a3c' : '#fff', strokeWeight: 2,
-    }});
-    poiMarkers.push(m);
-  }
+  const m = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: gmap, content: el });
+  poiMarkers.push(m);
 }
 
 // ── Discovery Engine ──
@@ -530,15 +492,7 @@ function showItinerary() {
 function setTheme(t) {
   state.theme = t;
   document.documentElement.classList.toggle('dark', t === 'dark');
-  // Force full map re-init with correct mapId / styles
-  state._mapZoom = 15;
-  if (gmap) {
-    // Clear old markers
-    poiMarkers.forEach(m => { try { m.map = null; } catch(e) { m.setMap(null); } });
-    poiMarkers = [];
-    if (userMarker) { try { userMarker.map = null; } catch(e) { userMarker.setMap(null); } userMarker = null; }
-  }
-  // Re-render settings page with the updated toggle states
+  // CSS filter handles dark map — no reinit needed
   renderPage();
 }
 

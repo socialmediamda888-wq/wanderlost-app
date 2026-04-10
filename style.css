@@ -250,6 +250,14 @@ html.dark .toggle-active {
 
 /* --- Map container --- */
 #gmap { position: absolute; inset: 0; z-index: 0; }
+html.dark #gmap {
+  filter: invert(0.92) hue-rotate(180deg) saturate(0.3) brightness(0.95);
+}
+/* Counter-invert markers so they look normal on the inverted map */
+html.dark .sonar-glow, html.dark .sonar-ping, html.dark .sonar-core,
+html.dark .poi-dot, html.dark .poi-pulse {
+  filter: invert(0.92) hue-rotate(180deg) saturate(3) brightness(1.1);
+}
 
 /* --- Premium Gate --- */
 html.dark #premium-gate { background: rgba(0,0,0,0.6); }
