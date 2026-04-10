@@ -37,12 +37,14 @@ let state = {
   isPremium: false,
   user: null,
   authTab: 'login',
-  activeCategory: null,
+  activeCategory: 'restaurant',
   currentPlace: null,
   savedPlaces: [],
   history: [],
   itinerary: [],
   userLocation: null,
+  searchCenter: null,
+  _geoResolved: false,
   distanceUnit: 'meters',
   theme: 'light',
   selectedPlan: 'annual',
@@ -94,7 +96,15 @@ function navigateTo(page) {
 }
 function updateNav() {
   document.querySelectorAll('.nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.nav === state.page);
+    if (b.dataset.nav === state.page) {
+      b.classList.remove('text-on-surface-variant');
+      b.classList.add('text-primary');
+      b.querySelector('span:first-child').style.fontVariationSettings = "'FILL' 1";
+    } else {
+      b.classList.add('text-on-surface-variant');
+      b.classList.remove('text-primary');
+      b.querySelector('span:first-child').style.fontVariationSettings = "'FILL' 0";
+    }
   });
   const topbar = document.getElementById('topbar');
   topbar.style.display = state.page === 'checkout' ? 'none' : '';
@@ -144,7 +154,8 @@ function initMap() {
   if (!container) return;
   const fallbackCenter = { lat: 48.8566, lng: 2.3522 };
   const center = state.userLocation || fallbackCenter;
-  gmap = new google.maps.Map(container, {
+  state.searchCenter = center;
+  gmap = new google.maps.Map(document.getElementById('gmap'), {
     center, zoom: state.userLocation ? 15 : 3, mapId: MAP_ID,
     disableDefaultUI: true, gestureHandling: 'greedy',
     styles: MAP_STYLE_LIGHT,
@@ -163,8 +174,8 @@ function initMap() {
     autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace();
       if (place.geometry && place.geometry.location) {
-        state.userLocation = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
-        gmap.panTo(state.userLocation);
+        state.searchCenter = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+        gmap.panTo(state.searchCenter);
         gmap.setZoom(13);
         createUserMarker();
         // Clear old discovered markers
@@ -177,8 +188,8 @@ function initMap() {
   if (!state._geoResolved) {
     state._geoResolved = true;
     requestUserLocation();
-  } else if (state.userLocation) {
-    gmap.panTo(state.userLocation);
+  } else if (state.searchCenter) {
+    gmap.panTo(state.searchCenter);
     gmap.setZoom(15);
     createUserMarker();
     // Re-add discovered markers
@@ -193,6 +204,7 @@ function requestUserLocation() {
   navigator.geolocation.getCurrentPosition(
     p => {
       state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude };
+      state.searchCenter = { ...state.userLocation };
       flyIn();
     },
     err => {
@@ -202,7 +214,7 @@ function requestUserLocation() {
         showToast('Location request timed out. Trying again…');
         // Retry once with lower accuracy
         navigator.geolocation.getCurrentPosition(
-          p => { state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude }; flyIn(); },
+          p => { state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude }; state.searchCenter = { ...state.userLocation }; flyIn(); },
           () => showToast('Could not get your location. Allow location access and refresh.'),
           { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
         );
@@ -214,7 +226,7 @@ function requestUserLocation() {
   );
 }
 function flyIn() {
-  gmap.panTo(state.userLocation);
+  gmap.panTo(state.searchCenter);
   let z = gmap.getZoom(), target = 15;
   const iv = setInterval(() => {
     if (z >= target) { clearInterval(iv); createUserMarker(); return; }
@@ -227,7 +239,7 @@ function createUserMarker() {
   const el = document.createElement('div');
   el.style.cssText = 'position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center';
   el.innerHTML = '<div class="sonar-glow"></div><div class="sonar-ping"></div><div class="sonar-core"></div>';
-  userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation, map: gmap, content: el });
+  userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation || state.searchCenter, map: gmap, content: el });
 }
 function addPoiMarker(lat, lng) {
   addPoiMarkerDirect(lat, lng);
@@ -272,7 +284,7 @@ function triggerDiscovery() {
   const radiusOptions = [1500, 2000, 2500, 3000, 3500, 4000, 5000];
   const radius = radiusOptions[Math.floor(Math.random() * radiusOptions.length)];
   const request = {
-    location: new google.maps.LatLng(state.userLocation.lat, state.userLocation.lng),
+    location: new google.maps.LatLng(state.searchCenter.lat, state.searchCenter.lng),
     radius: radius,
     type: type,
   };
@@ -312,7 +324,8 @@ function triggerDiscovery() {
     const pick = candidates[0];
     const lat = pick.geometry.location.lat();
     const lng = pick.geometry.location.lng();
-    const dist = haversine(state.userLocation.lat, state.userLocation.lng, lat, lng);
+    const origin = state.userLocation || state.searchCenter;
+    const dist = haversine(origin.lat, origin.lng, lat, lng);
     const categoryName = CATEGORIES.find(c => c.id === type)?.name || 'Hidden Gem';
     const basicOpen = pick.opening_hours != null ? (pick.opening_hours.open_now === true ? true : pick.opening_hours.open_now === false ? false : null) : null;
     state.currentPlace = {
@@ -334,7 +347,7 @@ function triggerDiscovery() {
     const _pickId = pick.place_id;
     try {
       placesService.getDetails(
-        { placeId: _pickId, fields: ['opening_hours', 'business_status', 'formatted_phone_number', 'website', 'url'] },
+        { placeId: _pickId, fields: ['opening_hours', 'current_opening_hours', 'business_status', 'formatted_phone_number', 'website', 'url'] },
         (detail, detailStatus) => {
           if (!state.currentPlace || state.currentPlace.id !== _pickId) return;
           state.currentPlace._detailsFetched = true;
@@ -460,7 +473,7 @@ function collapseSheet() {
 function dismissSheet() {
   collapseSheet();
   state.currentPlace = null;
-  if (state.userLocation && gmap) { gmap.panTo(state.userLocation); gmap.setZoom(15); }
+  if (state.searchCenter && gmap) { gmap.panTo(state.searchCenter); gmap.setZoom(15); }
 }
 function toggleSave() {
   const p = state.currentPlace; if (!p) return;
@@ -498,23 +511,28 @@ function closePremiumGate() {
 // ── Page Renderers ──
 function renderPage() {
   const c = document.getElementById('page-container');
-  c.className = 'flex-1 pt-14 pb-20 overflow-hidden';
-  switch(state.page) {
-    case 'map': renderMap(c); break;
-    case 'account': renderAccount(c); break;
-    case 'settings': renderSettings(c); break;
-    case 'checkout': renderCheckout(c); break;
-    default: renderMap(c);
+  const mv = document.getElementById('map-view');
+  
+  if (state.page === 'map') {
+    mv.classList.remove('hidden');
+    c.innerHTML = ''; // Keep container empty
+    c.className = 'flex-1 pt-0 pb-0 overflow-hidden relative z-10 w-full pointer-events-none';
+    renderMapOverlay(c);
+  } else {
+    mv.classList.add('hidden');
+    c.className = 'flex-1 pt-14 pb-20 overflow-y-auto bg-surface relative z-10 w-full pointer-events-auto';
+    switch(state.page) {
+      case 'account': renderAccount(c); break;
+      case 'settings': renderSettings(c); break;
+      case 'checkout': renderCheckout(c); break;
+    }
   }
 }
 
-function renderMap(c) {
-  c.className = 'flex-1 pt-0 pb-0 overflow-hidden relative';
+function renderMapOverlay(c) {
+  // We no longer recreate #gmap, just overlay items like the category strip
   c.innerHTML = `
-    <div id="gmap" class="absolute inset-0"></div>
-    <div class="scrim-top"></div>
-    <div class="scrim-bottom"></div>
-    <div class="absolute top-16 left-3 right-3 z-10">
+    <div class="absolute top-16 left-3 right-3 z-10 pointer-events-auto">
       <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-3" id="cat-strip"></div>
     </div>`;
   renderCategories();
