@@ -579,7 +579,17 @@ function showLegal(type) {
       </div>
     `).join('')}
     <div class="pt-6 border-t border-surface-container mt-8">
-      <p class="text-[10px] uppercase tracking-widest text-on-surface-variant/40 text-center">Wanderlost — Digital Sanctuary Project</p>
+      <p class="text-xs font-bold text-on-surface mb-3">Related Documents</p>
+      <div class="flex flex-col gap-2">
+        ${Object.entries(LEGAL_CONTENT).filter(([k]) => k !== type).map(([k, v]) => `
+          <button onclick="showLegal('${k}')" class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors text-left">
+            <span class="material-symbols-outlined text-primary text-lg">${v.icon}</span>
+            <span class="flex-1 text-sm font-semibold text-on-surface">${v.title}</span>
+            <span class="material-symbols-outlined text-outline-variant text-sm">arrow_forward</span>
+          </button>
+        `).join('')}
+      </div>
+      <p class="text-[10px] uppercase tracking-widest text-on-surface-variant/40 text-center mt-6">Wanderlost — Digital Sanctuary Project</p>
     </div>
   `;
   modal.style.opacity = '1';
