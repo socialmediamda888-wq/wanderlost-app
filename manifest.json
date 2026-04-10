@@ -1,0 +1,27 @@
+{
+  "name": "Wanderlost",
+  "short_name": "Wanderlost",
+  "description": "Discover extraordinary places around you.",
+  "start_url": "/wanderlost-app/",
+  "scope": "/wanderlost-app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0eb",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["travel", "lifestyle", "navigation"],
+  "screenshots": []
+}

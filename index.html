@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Wanderlost — The Digital Sanctuary</title>
 <meta name="description" content="Discover hidden gems loved by locals. Premium travel discovery app."/>
+
+<!-- PWA / Installable App -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#1a1a2e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Wanderlost"/>
+<link rel="apple-touch-icon" href="icons/icon-512.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png"/>
+
+<!-- Preload fonts  -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -188,5 +200,14 @@ html.dark #splash .splash-bar-fill { background: #acb3b4; }
 
 <script src="app.js"></script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB1RVtX565j0NYmTtFebx1nmDCrh6X0rYM&libraries=places,marker&v=weekly&callback=onMapsReady"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/wanderlost-app/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.warn('SW failed:', err));
+    });
+  }
+</script>
 </body>
 </html>
