@@ -237,12 +237,13 @@ function triggerDiscovery() {
     const lng = pick.geometry.location.lng();
     const dist = haversine(state.userLocation.lat, state.userLocation.lng, lat, lng);
     const categoryName = CATEGORIES.find(c => c.id === type)?.name || 'Hidden Gem';
+    const basicOpen = pick.opening_hours != null ? (pick.opening_hours.open_now === true ? true : pick.opening_hours.open_now === false ? false : null) : null;
     state.currentPlace = {
       id: pick.place_id, name: pick.name,
       category: categoryName,
       distance: formatDist(dist), address: pick.vicinity,
       rating: pick.rating, reviews: pick.user_ratings_total || 0,
-      isOpen: pick.opening_hours != null ? (pick.opening_hours.open_now === true ? true : pick.opening_hours.open_now === false ? false : null) : null,
+      isOpen: basicOpen,
       lat, lng,
     };
     if (!state.isPremium) { state.credits--; updateCredits(); }
@@ -252,6 +253,34 @@ function triggerDiscovery() {
     addPoiMarker(lat, lng);
     showDiscoverySheet();
     if (state.page !== 'map') navigateTo('map');
+    // Fetch detailed info (opening hours, phone, website) in background
+    placesService.getDetails(
+      { placeId: pick.place_id, fields: ['opening_hours', 'formatted_phone_number', 'website', 'url'] },
+      (detail, detailStatus) => {
+        if (detailStatus === google.maps.places.PlacesServiceStatus.OK && detail && state.currentPlace?.id === pick.place_id) {
+          // Update open status from detailed data
+          if (detail.opening_hours) {
+            state.currentPlace.isOpen = detail.opening_hours.isOpen() ? true : false;
+          }
+          if (detail.formatted_phone_number) {
+            state.currentPlace.phone = detail.formatted_phone_number;
+          }
+          if (detail.website) {
+            state.currentPlace.website = detail.website;
+          }
+          if (detail.url) {
+            state.currentPlace.googleUrl = detail.url;
+          }
+          // Update history entry too
+          const histEntry = state.history.find(h => h.id === pick.place_id);
+          if (histEntry) {
+            histEntry.isOpen = state.currentPlace.isOpen;
+          }
+          // Re-render sheet with updated info
+          showDiscoverySheet();
+        }
+      }
+    );
   });
 }
 
