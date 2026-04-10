@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Wanderlost — The Digital Sanctuary</title>
+<meta name="description" content="Discover hidden gems loved by locals. Premium travel discovery app."/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#5f5e5e", "primary-dim": "#535252",
+        "on-primary": "#faf7f6", "primary-container": "#e5e2e1",
+        "on-primary-container": "#525151",
+        "surface": "#f9f9f9", "surface-bright": "#f9f9f9",
+        "surface-dim": "#d3dbdd",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-low": "#f2f4f4",
+        "surface-container": "#ebeeef",
+        "surface-container-high": "#e4e9ea",
+        "surface-container-highest": "#dde4e5",
+        "surface-tint": "#5f5e5e",
+        "on-surface": "#2d3435", "on-surface-variant": "#596061",
+        "on-background": "#2d3435",
+        "outline": "#757c7d", "outline-variant": "#acb3b4",
+        "secondary": "#5f5f5f", "on-secondary": "#faf8f8",
+        "secondary-container": "#e3e2e2",
+        "tertiary": "#5e5f5f", "on-tertiary": "#f9f9f9",
+        "tertiary-container": "#f4f3f3",
+        "error": "#9f403d", "on-error": "#fff7f6",
+        "error-container": "#fe8983",
+        "inverse-surface": "#0c0f0f", "inverse-on-surface": "#9c9d9d",
+        "inverse-primary": "#ffffff",
+        "surface-variant": "#dde4e5",
+      },
+      borderRadius: { DEFAULT: "1rem", lg: "2rem", xl: "3rem", full: "9999px" },
+      fontFamily: { headline: ["Manrope"], body: ["Manrope"], label: ["Manrope"] },
+    },
+  },
+};
+</script>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-hidden select-none">
+
+<!-- ═══════════ APP SHELL ═══════════ -->
+<div id="app" class="relative w-full h-[100dvh] flex flex-col">
+
+  <!-- TOP BAR -->
+  <header id="topbar" class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-14 bg-white/10 backdrop-blur-[40px] border-b border-white/10 shadow-2xl shadow-black/5">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-on-surface" style="font-variation-settings:'FILL' 1">explore</span>
+      <h1 class="text-lg font-bold tracking-tighter text-on-surface">Wanderlost</h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <div id="credits-badge" class="bg-white/40 backdrop-blur-md px-3.5 py-1 rounded-full border-t border-l border-white/40 shadow-sm cursor-pointer">
+        <span id="credits-text" class="font-label tracking-tight font-light uppercase text-[10px] text-neutral-600">3 Free Discoveries</span>
+      </div>
+      <button onclick="navigateTo('settings')" class="material-symbols-outlined text-neutral-500 p-1.5 rounded-full hover:bg-white/20 transition-all text-xl">menu</button>
+    </div>
+  </header>
+
+  <!-- PAGE CONTAINER -->
+  <main id="page-container" class="flex-1 pt-14 pb-20 overflow-hidden"></main>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottomnav" class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pb-6 pt-3 bg-white/10 backdrop-blur-[40px] border-t border-white/20 shadow-2xl shadow-black/10 rounded-t-[1.5rem]">
+    <button onclick="navigateTo('map')" data-nav="map" class="nav-btn flex flex-col items-center justify-center p-2 rounded-full transition-all">
+      <span class="material-symbols-outlined text-xl">map</span>
+      <span class="font-label text-[9px] uppercase tracking-widest font-medium mt-0.5">Map</span>
+    </button>
+    <div class="relative -top-5">
+      <button onclick="triggerDiscovery()" id="discover-fab" class="flex flex-col items-center justify-center bg-surface-tint text-on-primary rounded-full p-5 shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">explore</span>
+      </button>
+      <span class="font-label text-[9px] uppercase tracking-widest font-bold mt-1 block text-center text-on-surface">Discover</span>
+    </div>
+    <button onclick="navigateTo('account')" data-nav="account" class="nav-btn flex flex-col items-center justify-center p-2 rounded-full transition-all">
+      <span class="material-symbols-outlined text-xl">person</span>
+      <span class="font-label text-[9px] uppercase tracking-widest font-medium mt-0.5">Account</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ═══════════ OVERLAYS ═══════════ -->
+
+<!-- Discovery Sheet -->
+<div id="discovery-sheet" class="fixed inset-x-0 bottom-0 z-[60] transition-transform duration-500 ease-out translate-y-full">
+  <div id="discovery-content" class="bg-surface-container-lowest rounded-t-[1.5rem] shadow-2xl shadow-black/20 border-t border-white/30 max-h-[55vh] overflow-y-auto"></div>
+</div>
+
+<!-- Premium Gate -->
+<div id="premium-gate" class="fixed inset-0 z-[70] bg-black/30 backdrop-blur-[60px] flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-300">
+  <div id="premium-card" class="max-w-md w-full bg-white/10 backdrop-blur-[40px] rounded-xl glass-border shadow-2xl shadow-black/10 overflow-hidden p-8 text-center scale-95 transition-transform duration-300"></div>
+</div>
+
+<!-- Checkout Overlay -->
+<div id="checkout-overlay" class="fixed inset-0 z-[80] bg-surface overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
+  <div id="checkout-content" class="pt-20 pb-12 px-6 max-w-lg mx-auto"></div>
+</div>
+
+<script src="app.js"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB1RVtX565j0NYmTtFebx1nmDCrh6X0rYM&libraries=places,marker&v=weekly&callback=onMapsReady"></script>
+</body>
+</html>

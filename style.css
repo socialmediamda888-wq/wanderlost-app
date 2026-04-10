@@ -1,0 +1,143 @@
+/* ═══════════ WANDERLOST DESIGN SYSTEM ═══════════ */
+
+/* --- Reset & Base --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-serif; }
+
+/* --- Material Symbols --- */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+}
+
+/* --- Glass Surfaces --- */
+.glass-border {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+.glass-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+.glass-sheet {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* --- Scrims --- */
+.scrim-top {
+  position: absolute; top: 0; left: 0; right: 0; height: 140px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+  pointer-events: none; z-index: 5;
+}
+.scrim-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+  background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+  pointer-events: none; z-index: 5;
+}
+
+/* --- Scrollbar Hide --- */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- Sonar Marker --- */
+@keyframes sonarBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(1.5); opacity: 0.7; }
+}
+@keyframes sonarPing {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+.sonar-glow {
+  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(95,94,94,0.5) 0%, transparent 70%);
+  animation: sonarBreathe 3s ease-in-out infinite;
+}
+.sonar-ping {
+  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  border: 2px solid rgba(95,94,94,0.5);
+  animation: sonarPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.sonar-core {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #5f5e5e; border: 3px solid white;
+  box-shadow: 0 0 12px rgba(95,94,94,0.6);
+  position: relative; z-index: 2;
+}
+
+/* --- POI Marker (game vibe) --- */
+@keyframes poiPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.8); opacity: 0; }
+}
+.poi-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #5f5e5e; border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  position: relative; z-index: 2;
+}
+.poi-pulse {
+  position: absolute; width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(95,94,94,0.25);
+  animation: poiPulse 2s ease-in-out infinite;
+}
+
+/* --- Animations --- */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-slide-up { animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.anim-fade { animation: fadeIn 0.4s ease forwards; }
+.anim-scale { animation: scaleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* --- Nav States --- */
+.nav-btn { color: #9ca3af; }
+.nav-btn.active {
+  color: #2d3435;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(12px);
+}
+
+/* --- Golden Shimmer CTA --- */
+.golden-shimmer {
+  background: linear-gradient(135deg, #5f5e5e 0%, #b3b1b1 50%, #5f5e5e 100%);
+  background-size: 200% auto;
+}
+
+/* --- Page transitions --- */
+.page-enter { animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* --- Category chip --- */
+.cat-chip {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cat-chip.active {
+  background: #5f5e5e !important;
+  color: white !important;
+}
+
+/* --- Map container --- */
+#gmap { position: absolute; inset: 0; z-index: 0; }
+
+/* --- Dark mode overrides --- */
+html.dark body { background: #0c0f0f; color: #e4e9ea; }
+html.dark .glass-border { border-color: rgba(255,255,255,0.08); }
+html.dark #topbar { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.06); }
+html.dark #bottomnav { background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.06); }
+html.dark .nav-btn.active { color: #fff; background: rgba(255,255,255,0.08); }
