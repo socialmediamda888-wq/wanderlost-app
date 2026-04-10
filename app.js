@@ -242,7 +242,7 @@ function triggerDiscovery() {
       category: categoryName,
       distance: formatDist(dist), address: pick.vicinity,
       rating: pick.rating, reviews: pick.user_ratings_total || 0,
-      isOpen: pick.opening_hours?.isOpen?.() ?? null,
+      isOpen: pick.opening_hours != null ? (pick.opening_hours.open_now === true ? true : pick.opening_hours.open_now === false ? false : null) : null,
       lat, lng,
     };
     if (!state.isPremium) { state.credits--; updateCredits(); }
@@ -280,10 +280,10 @@ function showDiscoverySheet() {
   const isSaved = state.savedPlaces.some(s => s.id === p.id);
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}&query_place_id=${p.id}`;
   const openStatus = p.isOpen === true
-    ? '<span class="text-emerald-500 font-bold">● Open Now</span>'
+    ? '<span style="color:#10b981;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.1);padding:4px 10px;border-radius:999px"><span style="font-size:8px">●</span> Open Now</span>'
     : p.isOpen === false
-    ? '<span class="text-red-400 font-bold">● Closed</span>'
-    : '<span class="text-on-surface-variant/50">Hours unknown</span>';
+    ? '<span style="color:#ef4444;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,0.1);padding:4px 10px;border-radius:999px"><span style="font-size:8px">●</span> Closed</span>'
+    : '<span style="color:var(--c-on-surface-variant);opacity:0.5;font-size:11px">Hours unknown</span>';
   // Star rating display
   const stars = p.rating ? Array.from({length: 5}, (_, i) => {
     const fill = p.rating >= i + 1 ? 1 : p.rating >= i + 0.5 ? 0.5 : 0;
