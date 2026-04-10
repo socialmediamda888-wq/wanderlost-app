@@ -17,18 +17,33 @@ const CATEGORIES = [
   { id:'store', name:'Artisan Workshops', icon:'handyman' },
 ];
 
-const SILVER_STYLE = [
-  { elementType:'geometry', stylers:[{color:'#f2f2f0'}] },
-  { elementType:'labels.icon', stylers:[{visibility:'off'}] },
-  { elementType:'labels.text.fill', stylers:[{color:'#8c8c8c'}] },
-  { elementType:'labels.text.stroke', stylers:[{color:'#f5f5f5'}] },
-  { featureType:'poi', stylers:[{visibility:'off'}] },
-  { featureType:'road', elementType:'geometry', stylers:[{color:'#fff'}] },
-  { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
-  { featureType:'transit', stylers:[{visibility:'off'}] },
-  { featureType:'water', elementType:'geometry', stylers:[{color:'#c8d0d8'}] },
-  { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
-];
+const MAP_STYLES = {
+  light: [
+    { elementType:'geometry', stylers:[{color:'#f2f2f0'}] },
+    { elementType:'labels.icon', stylers:[{visibility:'off'}] },
+    { elementType:'labels.text.fill', stylers:[{color:'#8c8c8c'}] },
+    { elementType:'labels.text.stroke', stylers:[{color:'#f5f5f5'}] },
+    { featureType:'poi', stylers:[{visibility:'off'}] },
+    { featureType:'road', elementType:'geometry', stylers:[{color:'#fff'}] },
+    { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
+    { featureType:'transit', stylers:[{visibility:'off'}] },
+    { featureType:'water', elementType:'geometry', stylers:[{color:'#c8d0d8'}] },
+    { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
+  ],
+  dark: [
+    { elementType:'geometry', stylers:[{color:'#1a1f20'}] },
+    { elementType:'labels.icon', stylers:[{visibility:'off'}] },
+    { elementType:'labels.text.fill', stylers:[{color:'#596061'}] },
+    { elementType:'labels.text.stroke', stylers:[{color:'#0c0f0f'}] },
+    { featureType:'poi', stylers:[{visibility:'off'}] },
+    { featureType:'road', elementType:'geometry', stylers:[{color:'#2a3031'}] },
+    { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
+    { featureType:'transit', stylers:[{visibility:'off'}] },
+    { featureType:'water', elementType:'geometry', stylers:[{color:'#0e1314'}] },
+    { featureType:'administrative', elementType:'geometry.stroke', stylers:[{color:'#333a3c'}] },
+    { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
+  ],
+};
 
 // ── State ──
 let state = {
@@ -96,19 +111,34 @@ function onMapsReady() {
 function initMap() {
   const container = document.getElementById('gmap');
   if (!container) return;
-  const def = { lat: 48.8566, lng: 2.3522 };
-  state.userLocation = def;
-  gmap = new google.maps.Map(container, {
-    center: def, zoom: 3, mapId: MAP_ID,
+  const center = state.userLocation || { lat: 48.8566, lng: 2.3522 };
+  if (!state.userLocation) state.userLocation = center;
+  const isDark = state.theme === 'dark';
+  const opts = {
+    center, zoom: state._mapZoom || 3,
     disableDefaultUI: true, gestureHandling: 'greedy',
-  });
+  };
+  // mapId enables cloud styling + AdvancedMarker but overrides JSON styles.
+  // In dark mode we drop mapId so our dark JSON style applies.
+  if (!isDark) opts.mapId = MAP_ID;
+  opts.styles = MAP_STYLES[state.theme];
+  gmap = new google.maps.Map(container, opts);
   placesService = new google.maps.places.PlacesService(gmap);
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      p => { state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude }; flyIn(); },
-      () => flyIn()
-    );
-  } else { flyIn(); }
+  if (!state._geoResolved) {
+    state._geoResolved = true;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        p => { state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude }; flyIn(); },
+        () => flyIn()
+      );
+    } else { flyIn(); }
+  } else {
+    gmap.panTo(state.userLocation);
+    gmap.setZoom(15);
+    createUserMarker();
+    // Re-add discovered markers
+    state.discoveredMarkers.forEach(m => { if (m.position) addPoiMarkerAt(m.position.lat, m.position.lng); });
+  }
 }
 function flyIn() {
   gmap.panTo(state.userLocation);
@@ -120,19 +150,41 @@ function flyIn() {
   }, 25);
 }
 function createUserMarker() {
-  if (userMarker) userMarker.map = null;
-  const el = document.createElement('div');
-  el.style.cssText = 'position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center';
-  el.innerHTML = '<div class="sonar-glow"></div><div class="sonar-ping"></div><div class="sonar-core"></div>';
-  userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation, map: gmap, content: el });
+  if (userMarker) { try { userMarker.map = null; } catch(e) { userMarker.setMap(null); } }
+  const isDark = state.theme === 'dark';
+  try {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center';
+    el.innerHTML = '<div class="sonar-glow"></div><div class="sonar-ping"></div><div class="sonar-core"></div>';
+    userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation, map: gmap, content: el });
+  } catch(e) {
+    userMarker = new google.maps.Marker({ position: state.userLocation, map: gmap, icon: {
+      path: google.maps.SymbolPath.CIRCLE, scale: 8,
+      fillColor: isDark ? '#dde4e5' : '#5f5e5e', fillOpacity: 1,
+      strokeColor: isDark ? '#333a3c' : '#fff', strokeWeight: 3,
+    }});
+  }
 }
 function addPoiMarker(lat, lng) {
+  addPoiMarkerAt(lat, lng);
+  state.discoveredMarkers.push({ position: { lat, lng } });
+}
+function addPoiMarkerAt(lat, lng) {
   const el = document.createElement('div');
   el.style.cssText = 'position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center';
   el.innerHTML = '<div class="poi-pulse"></div><div class="poi-dot"></div>';
-  const m = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: gmap, content: el });
-  poiMarkers.push(m);
-  state.discoveredMarkers.push(m);
+  try {
+    const m = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: gmap, content: el });
+    poiMarkers.push(m);
+  } catch(e) {
+    // AdvancedMarker not available without mapId, use regular marker
+    const m = new google.maps.Marker({ position: { lat, lng }, map: gmap, icon: {
+      path: google.maps.SymbolPath.CIRCLE, scale: 7,
+      fillColor: state.theme === 'dark' ? '#dde4e5' : '#5f5e5e', fillOpacity: 1,
+      strokeColor: state.theme === 'dark' ? '#333a3c' : '#fff', strokeWeight: 2,
+    }});
+    poiMarkers.push(m);
+  }
 }
 
 // ── Discovery Engine ──
@@ -370,16 +422,16 @@ function renderSettings(c) {
     <div class="bg-surface-container-lowest rounded-lg p-5 mb-3 shadow-xl shadow-black/5">
       <div class="flex justify-between items-center"><span class="font-bold text-sm">Distance Units</span>
         <div class="bg-surface-container-high p-1 rounded-full flex gap-1">
-          <button onclick="state.distanceUnit='meters'; navigateTo('settings')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.distanceUnit==='meters' ? 'bg-white shadow-sm' : 'text-on-surface-variant'}">Meters</button>
-          <button onclick="state.distanceUnit='feet'; navigateTo('settings')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.distanceUnit==='feet' ? 'bg-white shadow-sm' : 'text-on-surface-variant'}">Feet</button>
+          <button onclick="state.distanceUnit='meters'; navigateTo('settings')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.distanceUnit==='meters' ? 'toggle-active' : 'text-on-surface-variant'}">Meters</button>
+          <button onclick="state.distanceUnit='feet'; navigateTo('settings')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.distanceUnit==='feet' ? 'toggle-active' : 'text-on-surface-variant'}">Feet</button>
         </div>
       </div>
     </div>
     <div class="bg-surface-container-lowest rounded-lg p-5 mb-8 shadow-xl shadow-black/5">
       <div class="flex justify-between items-center"><span class="font-bold text-sm">Theme</span>
         <div class="bg-surface-container-high p-1 rounded-full flex gap-1">
-          <button onclick="setTheme('light')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.theme==='light' ? 'bg-white shadow-sm' : 'text-on-surface-variant'}">Light</button>
-          <button onclick="setTheme('dark')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.theme==='dark' ? 'bg-white shadow-sm' : 'text-on-surface-variant'}">Dark</button>
+          <button onclick="setTheme('light')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.theme==='light' ? 'toggle-active' : 'text-on-surface-variant'}">Light</button>
+          <button onclick="setTheme('dark')" class="px-4 py-1.5 rounded-full text-xs font-bold ${state.theme==='dark' ? 'toggle-active' : 'text-on-surface-variant'}">Dark</button>
         </div>
       </div>
     </div>
@@ -405,8 +457,8 @@ function renderCheckout(c) {
   const price = isAnnual ? '$100.00' : '$10.00';
   c.innerHTML = `<div class="page-enter">
     <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-[40px] flex justify-between items-center px-6 py-4">
-      <div class="flex items-center gap-2"><button onclick="navigateTo('map')" class="material-symbols-outlined text-stone-600">arrow_back</button><h1 class="text-xl font-semibold tracking-tighter">Wanderlost</h1></div>
-      <span class="material-symbols-outlined text-stone-600">lock</span>
+      <div class="flex items-center gap-2"><button onclick="navigateTo('map')" class="material-symbols-outlined text-on-surface-variant">arrow_back</button><h1 class="text-xl font-semibold tracking-tighter text-on-surface">Wanderlost</h1></div>
+      <span class="material-symbols-outlined text-on-surface-variant">lock</span>
     </header>
     <div class="pt-24 pb-12 px-6 max-w-lg mx-auto">
       <p class="text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Checkout</p>
@@ -478,7 +530,16 @@ function showItinerary() {
 function setTheme(t) {
   state.theme = t;
   document.documentElement.classList.toggle('dark', t === 'dark');
-  navigateTo('settings');
+  // Force full map re-init with correct mapId / styles
+  state._mapZoom = 15;
+  if (gmap) {
+    // Clear old markers
+    poiMarkers.forEach(m => { try { m.map = null; } catch(e) { m.setMap(null); } });
+    poiMarkers = [];
+    if (userMarker) { try { userMarker.map = null; } catch(e) { userMarker.setMap(null); } userMarker = null; }
+  }
+  // Re-render settings page with the updated toggle states
+  renderPage();
 }
 
 // ── Globals ──

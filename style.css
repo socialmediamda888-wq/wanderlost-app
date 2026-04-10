@@ -1,8 +1,82 @@
 /* ═══════════ WANDERLOST DESIGN SYSTEM ═══════════ */
 
+/* ── COLOR TOKENS (Light) ── */
+:root {
+  --c-primary: #5f5e5e;
+  --c-primary-dim: #535252;
+  --c-on-primary: #faf7f6;
+  --c-primary-container: #e5e2e1;
+  --c-on-primary-container: #525151;
+  --c-surface: #f9f9f9;
+  --c-surface-bright: #f9f9f9;
+  --c-surface-dim: #d3dbdd;
+  --c-surface-container-lowest: #ffffff;
+  --c-surface-container-low: #f2f4f4;
+  --c-surface-container: #ebeeef;
+  --c-surface-container-high: #e4e9ea;
+  --c-surface-container-highest: #dde4e5;
+  --c-surface-tint: #5f5e5e;
+  --c-on-surface: #2d3435;
+  --c-on-surface-variant: #596061;
+  --c-on-background: #2d3435;
+  --c-outline: #757c7d;
+  --c-outline-variant: #acb3b4;
+  --c-secondary: #5f5f5f;
+  --c-on-secondary: #faf8f8;
+  --c-secondary-container: #e3e2e2;
+  --c-tertiary: #5e5f5f;
+  --c-on-tertiary: #f9f9f9;
+  --c-tertiary-container: #f4f3f3;
+  --c-error: #9f403d;
+  --c-on-error: #fff7f6;
+  --c-error-container: #fe8983;
+  --c-inverse-surface: #0c0f0f;
+  --c-inverse-on-surface: #9c9d9d;
+  --c-inverse-primary: #ffffff;
+  --c-surface-variant: #dde4e5;
+}
+
+/* ── COLOR TOKENS (Dark) ── */
+html.dark {
+  --c-primary: #acb3b4;
+  --c-primary-dim: #8a9293;
+  --c-on-primary: #0c0f0f;
+  --c-primary-container: #2a3031;
+  --c-on-primary-container: #dde4e5;
+  --c-surface: #0c0f0f;
+  --c-surface-bright: #1c2021;
+  --c-surface-dim: #0c0f0f;
+  --c-surface-container-lowest: #070909;
+  --c-surface-container-low: #161a1b;
+  --c-surface-container: #1c2021;
+  --c-surface-container-high: #252b2c;
+  --c-surface-container-highest: #333a3c;
+  --c-surface-tint: #dde4e5;
+  --c-on-surface: #dde4e5;
+  --c-on-surface-variant: #8a9293;
+  --c-on-background: #dde4e5;
+  --c-outline: #6b7475;
+  --c-outline-variant: #3d4546;
+  --c-secondary: #acb3b4;
+  --c-on-secondary: #0c0f0f;
+  --c-secondary-container: #2a3031;
+  --c-tertiary: #acb3b4;
+  --c-on-tertiary: #0c0f0f;
+  --c-tertiary-container: #252b2c;
+  --c-error: #ff6b68;
+  --c-on-error: #2a0506;
+  --c-error-container: #7a2120;
+  --c-inverse-surface: #dde4e5;
+  --c-inverse-on-surface: #2d3435;
+  --c-inverse-primary: #5f5e5e;
+  --c-surface-variant: #333a3c;
+  color-scheme: dark;
+}
+
 /* --- Reset & Base --- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-serif; }
+body { background: var(--c-surface); color: var(--c-on-surface); }
 
 /* --- Material Symbols --- */
 .material-symbols-outlined {
@@ -12,33 +86,26 @@ body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-
 
 /* --- Glass Surfaces --- */
 .glass-border {
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
 }
 .glass-panel {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
-}
-.glass-sheet {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* --- Scrims --- */
 .scrim-top {
   position: absolute; top: 0; left: 0; right: 0; height: 140px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+  background: linear-gradient(to bottom, var(--c-surface), transparent);
   pointer-events: none; z-index: 5;
 }
 .scrim-bottom {
   position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
-  background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+  background: linear-gradient(to top, var(--c-surface), transparent);
   pointer-events: none; z-index: 5;
 }
 
@@ -67,10 +134,15 @@ body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-
 }
 .sonar-core {
   width: 14px; height: 14px; border-radius: 50%;
-  background: #5f5e5e; border: 3px solid white;
+  background: var(--c-primary); border: 3px solid var(--c-surface-container-lowest);
   box-shadow: 0 0 12px rgba(95,94,94,0.6);
   position: relative; z-index: 2;
 }
+html.dark .sonar-glow {
+  background: radial-gradient(circle, rgba(221,228,229,0.5) 0%, transparent 70%);
+}
+html.dark .sonar-ping { border-color: rgba(221,228,229,0.5); }
+html.dark .sonar-core { box-shadow: 0 0 16px rgba(221,228,229,0.6); }
 
 /* --- POI Marker (game vibe) --- */
 @keyframes poiPulse {
@@ -79,7 +151,7 @@ body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-
 }
 .poi-dot {
   width: 12px; height: 12px; border-radius: 50%;
-  background: #5f5e5e; border: 2px solid white;
+  background: var(--c-primary); border: 2px solid var(--c-surface-container-lowest);
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   position: relative; z-index: 2;
 }
@@ -88,16 +160,14 @@ body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-
   background: rgba(95,94,94,0.25);
   animation: poiPulse 2s ease-in-out infinite;
 }
+html.dark .poi-pulse { background: rgba(221,228,229,0.2); }
 
 /* --- Animations --- */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
@@ -105,13 +175,56 @@ body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-
 .anim-slide-up { animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .anim-fade { animation: fadeIn 0.4s ease forwards; }
 .anim-scale { animation: scaleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.page-enter { animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
 /* --- Nav States --- */
-.nav-btn { color: #9ca3af; }
+.nav-btn { color: var(--c-outline); }
 .nav-btn.active {
-  color: #2d3435;
-  background: rgba(255,255,255,0.2);
+  color: var(--c-on-surface);
+  background: rgba(255,255,255,0.15);
   backdrop-filter: blur(12px);
+}
+html.dark .nav-btn.active { background: rgba(255,255,255,0.06); }
+
+/* --- TopBar --- */
+#topbar {
+  background: rgba(249,249,249,0.6);
+  border-color: rgba(0,0,0,0.04);
+}
+html.dark #topbar {
+  background: rgba(12,15,15,0.75);
+  border-color: rgba(255,255,255,0.04);
+}
+#credits-badge {
+  background: rgba(255,255,255,0.4);
+  border-color: rgba(255,255,255,0.3);
+}
+html.dark #credits-badge {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.04);
+}
+
+/* --- BottomNav --- */
+html.dark #bottomnav {
+  background: rgba(12,15,15,0.8);
+  border-color: rgba(255,255,255,0.04);
+}
+html.dark #discover-fab { background: var(--c-surface-tint); color: var(--c-on-primary); }
+
+/* --- Discovery Sheet --- */
+#discovery-content { background: var(--c-surface-container-lowest); }
+
+/* --- Category chip --- */
+.cat-chip { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.cat-chip.active { background: var(--c-primary) !important; color: var(--c-on-primary) !important; }
+html.dark .cat-chip {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.04) !important;
+  color: var(--c-on-surface-variant);
+}
+html.dark .cat-chip.active {
+  background: var(--c-surface-tint) !important;
+  color: var(--c-on-primary) !important;
 }
 
 /* --- Golden Shimmer CTA --- */
@@ -119,25 +232,54 @@ body, html { width: 100%; height: 100%; font-family: 'Manrope', system-ui, sans-
   background: linear-gradient(135deg, #5f5e5e 0%, #b3b1b1 50%, #5f5e5e 100%);
   background-size: 200% auto;
 }
-
-/* --- Page transitions --- */
-.page-enter { animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-
-/* --- Category chip --- */
-.cat-chip {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+html.dark .golden-shimmer {
+  background: linear-gradient(135deg, #8a9293 0%, #dde4e5 50%, #8a9293 100%);
+  background-size: 200% auto;
+  color: #0c0f0f;
 }
-.cat-chip.active {
-  background: #5f5e5e !important;
-  color: white !important;
+
+/* --- Toggle pill active state --- */
+.toggle-active {
+  background: white; color: #2d3435;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+html.dark .toggle-active {
+  background: #333a3c; color: #dde4e5;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
 /* --- Map container --- */
 #gmap { position: absolute; inset: 0; z-index: 0; }
 
-/* --- Dark mode overrides --- */
-html.dark body { background: #0c0f0f; color: #e4e9ea; }
-html.dark .glass-border { border-color: rgba(255,255,255,0.08); }
-html.dark #topbar { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.06); }
-html.dark #bottomnav { background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.06); }
-html.dark .nav-btn.active { color: #fff; background: rgba(255,255,255,0.08); }
+/* --- Premium Gate --- */
+html.dark #premium-gate { background: rgba(0,0,0,0.6); }
+html.dark #premium-card {
+  background: rgba(22,26,27,0.92);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-left: 1px solid rgba(255,255,255,0.06);
+}
+
+/* --- Checkout Overlay --- */
+#checkout-overlay { background: var(--c-surface); }
+
+/* --- Inputs (dark) --- */
+html.dark input {
+  background: var(--c-surface-container-low) !important;
+  color: var(--c-on-surface) !important;
+}
+html.dark input::placeholder { color: var(--c-outline) !important; }
+html.dark input:focus { background: var(--c-surface-container-high) !important; }
+
+/* --- Hardcoded stone/neutral text overrides for dark --- */
+html.dark .text-stone-400 { color: var(--c-outline) !important; }
+html.dark .text-stone-500 { color: var(--c-on-surface-variant) !important; }
+html.dark .text-stone-600 { color: var(--c-outline-variant) !important; }
+html.dark .text-neutral-500 { color: var(--c-outline) !important; }
+html.dark .text-neutral-600 { color: var(--c-on-surface-variant) !important; }
+
+/* --- Apple Pay button inversion in dark --- */
+html.dark .bg-black { background: var(--c-on-surface) !important; color: var(--c-surface) !important; }
+
+/* --- Shadows softer in dark --- */
+html.dark .shadow-xl { box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important; }
+html.dark .shadow-2xl { box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important; }
