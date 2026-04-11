@@ -133,25 +133,37 @@ function updateCredits() {
 }
 
 // ── Map Init ──
-let _mapsReady = false, _winReady = false;
+let _mapsReady = false, _winReady = false, _animDone = false;
 
 function checkAppReady() {
-  if (!_mapsReady || !_winReady) return;
+  if (!_mapsReady || !_winReady || !_animDone) return;
+  // 1. Trigger the CSS zoom-fade-out on splash
+  const splash = document.getElementById('splash');
+  const app    = document.getElementById('app');
+  if (splash) splash.classList.add('hidden');
+  // 2. After splash CSS transition finishes (0.55s), reveal the app
   setTimeout(() => {
-    const splash = document.getElementById('splash');
-    const app    = document.getElementById('app');
-    // 1. Fade the splash OUT first
-    if (splash) splash.classList.add('hidden');
-    // 2. Only after splash fully fades (500ms) reveal the app
-    setTimeout(() => {
-      if (app) app.classList.add('ready');
-      // 3. Remove splash from DOM after it's fully invisible
-      setTimeout(() => { if (splash) splash.remove(); }, 450);
-    }, 500);
-  }, 300); // small delay to let map settle
+    if (app) app.classList.add('ready');
+    setTimeout(() => { if (splash) splash.remove(); }, 500);
+  }, 560);
 }
 
-window.addEventListener('load', () => { _winReady = true; checkAppReady(); });
+window.addEventListener('load', () => {
+  _winReady = true;
+  // Drive dismissal from the logo animation completing
+  const icon = document.getElementById('splash-icon');
+  if (icon) {
+    icon.addEventListener('animationend', () => {
+      _animDone = true;
+      setTimeout(checkAppReady, 280); // brief pause after logo lands
+    }, { once: true });
+    // Safety: if CSS animations blocked/disabled, proceed after 2s
+    setTimeout(() => { if (!_animDone) { _animDone = true; checkAppReady(); } }, 2000);
+  } else {
+    _animDone = true;
+    checkAppReady();
+  }
+});
 
 function onMapsReady() {
   if (state.page === 'map') {
