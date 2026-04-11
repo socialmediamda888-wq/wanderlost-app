@@ -67,9 +67,65 @@ tailwind.config = {
 };
 </script>
 
+<style>
+/* ── Splash Screen ── */
+#splash {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+  background: #f5fffe;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+html.dark #splash { background: #050d0d; }
+#splash-icon {
+  width: 120px; height: 120px;
+  animation: splashPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 12px 32px rgba(44,215,215,0.35));
+}
+@keyframes splashPulse {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 12px 32px rgba(44,215,215,0.35)); }
+  50%       { transform: scale(1.07); filter: drop-shadow(0 16px 40px rgba(44,215,215,0.55)); }
+}
+#splash-name {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 30px; font-weight: 800; letter-spacing: -0.04em;
+  color: #0d3333;
+}
+html.dark #splash-name { color: #e0fafa; }
+#splash-sub {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.2em;
+  text-transform: uppercase; color: #2CD7D7; margin-top: -12px;
+}
+#splash-bar {
+  margin-top: 8px; width: 100px; height: 2px;
+  border-radius: 999px; background: rgba(44,215,215,0.15); overflow: hidden;
+}
+#splash-bar-fill {
+  height: 100%; width: 35%; border-radius: 999px;
+  background: #2CD7D7;
+  animation: splashLoad 1.1s ease-in-out infinite;
+}
+@keyframes splashLoad {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+#splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#app { opacity: 0; transition: opacity 0.4s ease; }
+#app.ready { opacity: 1; }
+</style>
+
 </head>
 <body class="bg-surface font-body text-on-surface antialiased overflow-hidden select-none">
 
+
+<!-- ═══════════ SPLASH SCREEN ═══════════ -->
+<div id="splash">
+  <img id="splash-icon" src="icons/splash-logo.png" alt="Wanderlost"/>
+  <div id="splash-name">Wanderlost</div>
+  <div id="splash-sub">Discover your world</div>
+  <div id="splash-bar"><div id="splash-bar-fill"></div></div>
+</div>
 
 <!-- ═══════════ APP SHELL ═══════════ -->
 <div id="app" class="relative w-full h-[100dvh] flex flex-col">

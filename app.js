@@ -121,9 +121,27 @@ function updateCredits() {
 }
 
 // ── Map Init ──
+let _mapsReady = false, _winReady = false;
+
+function checkAppReady() {
+  if (!_mapsReady || !_winReady) return;
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    const app    = document.getElementById('app');
+    if (splash) splash.classList.add('hidden');
+    if (app)    app.classList.add('ready');
+    setTimeout(() => { if (splash) splash.remove(); }, 550);
+  }, 400); // let the map tiles settle
+}
+
+window.addEventListener('load', () => { _winReady = true; checkAppReady(); });
+
 function onMapsReady() {
   if (state.page === 'map') {
     initMap();
+  } else {
+    _mapsReady = true;
+    checkAppReady();
   }
   renderPage();
   updateNav();
@@ -141,7 +159,7 @@ function initMap() {
   });
   
   google.maps.event.addListenerOnce(gmap, 'tilesloaded', () => {
-    _mapsReadyFlag = true;
+    _mapsReady = true;
     checkAppReady();
   });
 
