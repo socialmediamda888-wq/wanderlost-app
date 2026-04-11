@@ -680,7 +680,7 @@ function renderAccount(c) {
       <form onsubmit="event.preventDefault(); handleLogin(this)" class="flex flex-col gap-5">
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">IDENTITY</label><input id="login-user" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 text-on-surface placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Username" type="text" required/></div>
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">ACCESS KEY</label><input id="login-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 text-on-surface placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
-        <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">ENTER SANCTUARY</button>
+        <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">LOG IN</button>
         <a href="#" onclick="event.preventDefault(); showToast('Check your email for reset instructions.')" class="text-center font-label text-[10px] tracking-widest text-on-surface-variant">FORGOT CREDENTIALS?</a>
       </form>` : `
       <form onsubmit="event.preventDefault(); handleRegister(this)" class="flex flex-col gap-5">
@@ -689,7 +689,7 @@ function renderAccount(c) {
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">DATE OF BIRTH</label><input id="reg-dob" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="DD/MM/YYYY" type="text"/></div>
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">PASSWORD</label><input id="reg-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">CONFIRM PASSWORD</label><input id="reg-pass2" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Confirm password" type="password" required/></div>
-        <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">CREATE VOYAGE</button>
+        <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">REGISTER ACCOUNT</button>
       </form>`}
     </div>
 
