@@ -13,8 +13,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Wanderlost"/>
-<link rel="apple-touch-icon" href="icons/icon-512.png"/>
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png"/>
+<link rel="apple-touch-icon" href="icons/logo.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="icons/logo.png"/>
 
 <!-- Preload fonts  -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -77,11 +77,20 @@ tailwind.config = {
 }
 html.dark #splash { background: #0c0f0f; }
 #splash .splash-logo {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  margin-bottom: 8px;
+}
+#splash .splash-logo img {
+  width: 96px; height: 96px; object-fit: contain;
+  border-radius: 20px;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.15));
+}
+#splash .splash-logo span {
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 28px; font-weight: 700; letter-spacing: -0.04em;
-  color: #2d3435; margin-bottom: 8px;
+  color: #2d3435;
 }
-html.dark #splash .splash-logo { color: #dde4e5; }
+html.dark #splash .splash-logo span { color: #dde4e5; }
 #splash .splash-sub {
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 10px; font-weight: 500; letter-spacing: 0.18em;
@@ -111,7 +120,10 @@ html.dark #splash .splash-bar-fill { background: #acb3b4; }
 
 <!-- ═══════════ SPLASH SCREEN ═══════════ -->
 <div id="splash">
-  <div class="splash-logo">Wanderlost</div>
+  <div class="splash-logo">
+    <img src="icons/logo.png" alt="Wanderlost logo"/>
+    <span>Wanderlost</span>
+  </div>
   <div class="splash-sub">Discovering your surroundings</div>
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
@@ -121,7 +133,7 @@ html.dark #splash .splash-bar-fill { background: #acb3b4; }
 
   <header id="topbar" class="fixed top-0 w-full z-50 flex justify-between items-center px-5 h-14 bg-white/10 backdrop-blur-[40px] border-b border-white/10 shadow-2xl shadow-black/5">
     <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-on-surface" style="font-variation-settings:'FILL' 1">explore</span>
+      <img src="icons/logo.png" alt="Wanderlost" style="width:28px;height:28px;object-fit:contain;border-radius:7px;" />
       <h1 class="text-lg font-bold tracking-tighter text-on-surface">Wanderlost</h1>
     </div>
     <div class="flex items-center gap-2">
