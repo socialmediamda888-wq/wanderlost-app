@@ -1,5 +1,15 @@
 /* ═══════════ WANDERLOST APP ENGINE ═══════════ */
 
+// ── System dark mode detection ──
+(function() {
+  const saved = localStorage.getItem('wl_theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+    // state will be updated to 'dark' after it's declared — handled in init
+    window._initialTheme = 'dark';
+  }
+})();
+
 const MAP_ID = 'fbb4c31d8d7ddda1d4548f5f';
 const CATEGORIES = [
   { id:'restaurant', name:'Restaurants', icon:'restaurant' },
@@ -53,6 +63,8 @@ let state = {
 };
 
 let gmap, placesService, userMarker, poiMarkers = [];
+// Apply pre-detected theme to state
+if (window._initialTheme) state.theme = window._initialTheme;
 
 // ── Haversine ──
 function haversine(lat1, lon1, lat2, lon2) {
@@ -635,15 +647,21 @@ function renderPage() {
 }
 
 function renderMapOverlay(c) {
-  // We no longer recreate #gmap, just overlay items like the category strip
   c.innerHTML = `
     <div class="absolute top-16 left-3 right-3 z-10 pointer-events-auto">
       <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-3" id="cat-strip"></div>
     </div>`;
   renderCategories();
-  setTimeout(() => {
-    if (typeof google !== 'undefined') initMap();
-  }, 100);
+  // Only init map once; subsequent navigations reuse the existing instance
+  if (!gmap) {
+    setTimeout(() => {
+      if (typeof google !== 'undefined') initMap();
+    }, 100);
+  } else {
+    // Move the existing map container back to the DOM anchor
+    const gmapDiv = document.getElementById('gmap');
+    if (gmapDiv) google.maps.event.trigger(gmap, 'resize');
+  }
 }
 
 function renderCategories() {
@@ -904,54 +922,6 @@ function showHistory() {
   modal.scrollTop = 0;
 }
 
-function showItinerary() {
-  if (!state.isPremium) { showPremiumGate(); return; }
-  const modal = document.getElementById('legal-modal');
-  const content = document.getElementById('legal-content');
-  const items = state.savedPlaces;
-  content.innerHTML = `
-    <div class="mb-6">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
-          <span class="material-symbols-outlined text-primary">event_note</span>
-        </div>
-        <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Your Collection</span>
-      </div>
-      <h1 class="text-3xl font-extrabold tracking-tighter text-on-surface mb-2">Saved Itinerary</h1>
-      <p class="text-on-surface-variant text-xs">${items.length} ${items.length === 1 ? 'place' : 'places'} saved</p>
-    </div>
-    ${items.length === 0 ? `
-      <div class="flex flex-col items-center py-12 text-center">
-        <span class="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-4">bookmark_border</span>
-        <p class="text-on-surface-variant text-sm">No saved places yet.</p>
-        <p class="text-on-surface-variant/60 text-xs mt-1">Save discoveries to build your itinerary.</p>
-      </div>
-    ` : items.map((p, i) => `
-      <div class="flex gap-4 mb-4 p-4 bg-surface-container-low rounded-xl">
-        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings:'FILL' 1">favorite</span>
-        </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-bold text-sm text-on-surface truncate">${p.name}</h3>
-          <p class="text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">${p.category} · ${p.distance} away</p>
-          ${p.rating ? `<div class="flex items-center gap-1 mt-1"><span class="text-amber-500 text-xs font-bold">${p.rating.toFixed(1)} ★</span></div>` : ''}
-          ${p.address ? `<p class="text-xs text-on-surface-variant/60 mt-1 truncate">${p.address}</p>` : ''}
-        </div>
-        <div class="flex flex-col gap-1 flex-shrink-0">
-          <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}&query_place_id=${p.id}" target="_blank" rel="noopener" class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-primary text-sm">open_in_new</span>
-          </a>
-          <button onclick="removeSavedPlace('${p.id}')" class="w-9 h-9 rounded-full bg-error/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-error text-sm">close</span>
-          </button>
-        </div>
-      </div>
-    `).join('')}
-  `;
-  modal.style.opacity = '1';
-  modal.style.pointerEvents = 'auto';
-  modal.scrollTop = 0;
-}
 
 function removeSavedPlace(id) {
   state.savedPlaces = state.savedPlaces.filter(p => p.id !== id);
@@ -1076,14 +1046,17 @@ function handleLogin(form) {
   navigateTo('account');
 }
 function handleRegister(form) {
-  const name = document.getElementById('reg-name').value.trim();
+  const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
-  const pass = document.getElementById('reg-pass').value;
+  const pass  = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
   if (!name || !email || !pass) { showToast('Please fill in all required fields.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email address.'); return; }
+  if (pass.length < 8) { showToast('Password must be at least 8 characters.'); return; }
   if (pass !== pass2) { showToast('Passwords do not match.'); return; }
   state.user = { name, email };
-  showToast('Welcome aboard, ' + name + '!');
+  state.authTab = 'login';
+  showToast('Welcome aboard, ' + name + '! You can now log in.');
   navigateTo('account');
 }
 function logOut() {
@@ -1139,8 +1112,8 @@ function deleteMyAccount() {
 
 function setTheme(t) {
   state.theme = t;
+  localStorage.setItem('wl_theme', t);
   document.documentElement.classList.toggle('dark', t === 'dark');
-  // CSS filter handles dark map — no reinit needed
   renderPage();
 }
 
