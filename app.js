@@ -430,12 +430,8 @@ function showDiscoverySheet() {
     return `<span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' ${fill >= 0.5 ? 1 : 0};color:${fill > 0 ? '#f59e0b' : 'var(--c-outline-variant)'}">star</span>`;
   }).join('') : '';
   document.getElementById('discovery-content').innerHTML = `
-    <div class="flex flex-col items-center pt-3 pb-2 px-6">
-      <div class="w-12 h-1 bg-on-surface-variant/20 rounded-full mb-4"></div>
-      <div class="w-full flex justify-between items-start">
-        <button onclick="collapseSheet()" class="p-2 bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-on-surface text-lg">keyboard_arrow_down</span></button>
-        <button onclick="dismissSheet()" class="p-2 bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-on-surface text-lg">close</span></button>
-      </div>
+    <div class="flex justify-end items-center pt-4 pb-1 px-5">
+      <button onclick="dismissSheet()" class="text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-xl">close</span></button>
     </div>
     <div class="px-7 pb-8">
       <span class="font-label text-[10px] uppercase tracking-widest font-bold text-on-surface-variant opacity-70">${p.category}</span>
@@ -465,9 +461,12 @@ function showDiscoverySheet() {
     </div>`;
   const sheet = document.getElementById('discovery-sheet');
   sheet.style.transform = 'translateY(0)';
+  sheet.style.opacity = '1';
 }
 function collapseSheet() {
-  document.getElementById('discovery-sheet').style.transform = 'translateY(100%)';
+  const sheet = document.getElementById('discovery-sheet');
+  sheet.style.transform = 'translateY(-120%)';
+  sheet.style.opacity = '0';
 }
 function dismissSheet() {
   collapseSheet();

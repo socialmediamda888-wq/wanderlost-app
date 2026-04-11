@@ -214,16 +214,16 @@ html.dark #discover-fab { background: var(--c-surface-tint); color: var(--c-on-p
 
 /* --- Discovery Sheet --- */
 #discovery-content {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
-  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 html.dark #discovery-content {
-  background: rgba(12, 15, 15, 0.75);
+  background: rgba(18, 22, 22, 0.88);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* --- Category chip --- */
