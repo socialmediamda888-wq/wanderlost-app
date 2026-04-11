@@ -38,11 +38,11 @@
 
 /* ── COLOR TOKENS (Dark) ── */
 html.dark {
-  --c-primary: #acb3b4;
-  --c-primary-dim: #8a9293;
-  --c-on-primary: #0c0f0f;
-  --c-primary-container: #2a3031;
-  --c-on-primary-container: #dde4e5;
+  --c-primary: #2CD7D7;
+  --c-primary-dim: #22b8b8;
+  --c-on-primary: #0d3333;
+  --c-primary-container: #0d3333;
+  --c-on-primary-container: #5ef0f0;
   --c-surface: #0c0f0f;
   --c-surface-bright: #1c2021;
   --c-surface-dim: #0c0f0f;
@@ -51,15 +51,15 @@ html.dark {
   --c-surface-container: #1c2021;
   --c-surface-container-high: #252b2c;
   --c-surface-container-highest: #333a3c;
-  --c-surface-tint: #dde4e5;
+  --c-surface-tint: #2CD7D7;
   --c-on-surface: #dde4e5;
   --c-on-surface-variant: #8a9293;
   --c-on-background: #dde4e5;
   --c-outline: #6b7475;
   --c-outline-variant: #3d4546;
-  --c-secondary: #acb3b4;
-  --c-on-secondary: #0c0f0f;
-  --c-secondary-container: #2a3031;
+  --c-secondary: #2CD7D7;
+  --c-on-secondary: #0d3333;
+  --c-secondary-container: #0d3333;
   --c-tertiary: #acb3b4;
   --c-on-tertiary: #0c0f0f;
   --c-tertiary-container: #252b2c;
@@ -68,7 +68,7 @@ html.dark {
   --c-error-container: #7a2120;
   --c-inverse-surface: #dde4e5;
   --c-inverse-on-surface: #2d3435;
-  --c-inverse-primary: #5f5e5e;
+  --c-inverse-primary: #22b8b8;
   --c-surface-variant: #333a3c;
   color-scheme: dark;
 }
