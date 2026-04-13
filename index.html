@@ -2,13 +2,14 @@
 <html class="light" lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"/>
+<meta name="color-scheme" content="light dark"/>
 <title>Wanderlost — The Digital Sanctuary</title>
 <meta name="description" content="Discover hidden gems loved by locals. Premium travel discovery app."/>
 
-<!-- PWA / Installable App -->
 <link rel="manifest" href="manifest.json"/>
-<meta name="theme-color" content="transparent"/>
+<meta name="theme-color" content="#f5fffe" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#050d0d" media="(prefers-color-scheme: dark)"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -16,12 +17,11 @@
 <link rel="apple-touch-icon" href="icons/logo.png"/>
 <link rel="icon" type="image/png" sizes="512x512" href="icons/logo.png"/>
 
-<!-- Preload fonts  -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="style.css"/>
-<script id="tailwind-config">
+<script>
 tailwind.config = {
   darkMode: "class",
   theme: {
@@ -68,21 +68,21 @@ tailwind.config = {
 </script>
 
 <style>
-/* ── Splash Screen ── */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 18px;
+  align-items: center; justify-content: center;
+  gap: clamp(12px, 3.5vw, 20px);
   background: #f5fffe;
   transition: opacity 0.55s cubic-bezier(0.4,0,1,1), visibility 0.55s linear;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 html.dark #splash { background: #050d0d; }
 
-/* Logo: starts invisible+small, springs into place */
 #splash-icon {
-  width: 130px; height: 130px;
-  opacity: 0;
-  transform: scale(0.65);
+  width: clamp(90px, 25vw, 140px); height: clamp(90px, 25vw, 140px);
+  object-fit: contain; opacity: 0; transform: scale(0.65);
   filter: drop-shadow(0 16px 40px rgba(44,215,215,0));
   animation: splashLogoIn 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards;
 }
@@ -92,102 +92,88 @@ html.dark #splash { background: #050d0d; }
   100% { opacity: 1; transform: scale(1);    filter: drop-shadow(0 12px 32px rgba(44,215,215,0.35)); }
 }
 
-/* App name: slides up and fades in after logo lands */
 #splash-name {
   font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: -0.04em;
-  color: #0d3333;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 800; letter-spacing: -0.04em; color: #0d3333;
   opacity: 0; transform: translateY(14px);
   animation: splashTextIn 0.5s cubic-bezier(0.22,1,0.36,1) 0.75s forwards;
 }
 html.dark #splash-name { color: #e0fafa; }
 
-/* Tagline: staggered slightly after the name */
 #splash-sub {
   font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 11px; font-weight: 500; letter-spacing: 0.2em;
+  font-size: clamp(0.6rem, 2.2vw, 0.75rem);
+  font-weight: 500; letter-spacing: 0.2em;
   text-transform: uppercase; color: #2CD7D7;
-  margin-top: -8px;
+  margin-top: clamp(-6px, -1.5vw, -4px);
   opacity: 0; transform: translateY(10px);
   animation: splashTextIn 0.5s cubic-bezier(0.22,1,0.36,1) 0.92s forwards;
 }
+@keyframes splashTextIn { to { opacity: 1; transform: translateY(0); } }
 
-@keyframes splashTextIn {
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Exit: whole splash zooms forward and fades out */
 #splash.hidden {
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(1.06);
+  opacity: 0; visibility: hidden; transform: scale(1.06);
   transition: opacity 0.55s cubic-bezier(0.4,0,1,1),
-              visibility 0.55s linear,
-              transform 0.55s cubic-bezier(0.4,0,1,1);
+              visibility 0.55s linear, transform 0.55s cubic-bezier(0.4,0,1,1);
 }
 
-#app { opacity: 0; visibility: hidden; transition: opacity 0.45s ease; }
+#app {
+  opacity: 0; visibility: hidden; transition: opacity 0.45s ease;
+  position: fixed !important; inset: 0 !important; overflow: hidden;
+}
 #app.ready { opacity: 1; visibility: visible; }
 </style>
 
 </head>
-<body class="bg-surface font-body text-on-surface antialiased overflow-hidden select-none" style="background:#f5fffe">
+<body class="bg-surface font-body text-on-surface antialiased overflow-hidden select-none">
 
-
-<!-- ═══════════ SPLASH SCREEN ═══════════ -->
 <div id="splash">
   <img id="splash-icon" src="icons/splash-logo.png" alt="Wanderlost"/>
   <div id="splash-name">Wanderlost</div>
   <div id="splash-sub">Discover your world</div>
 </div>
 
-<!-- ═══════════ APP SHELL ═══════════ -->
-<div id="app" class="relative w-full h-[100dvh] flex flex-col">
-
-  <header id="topbar" class="fixed top-0 w-full z-50 flex justify-between items-center px-4 h-14 bg-white/10 backdrop-blur-[40px] border-b border-white/10 shadow-2xl shadow-black/5">
-    <div class="flex items-center gap-2 min-w-0 flex-1 mr-2">
-      <img src="icons/logo.png" alt="Wanderlost" style="width:26px;height:26px;object-fit:contain;border-radius:7px;flex-shrink:0;" />
-      <h1 class="text-base font-bold tracking-tighter text-on-surface truncate">Wanderlost</h1>
-    </div>
-    <div class="flex items-center gap-1.5 flex-shrink-0">
-      <div id="credits-badge" onclick="if(!state.isPremium){showPremiumGate()}else{showToast('You have unlimited discoveries!')}" class="bg-white/40 backdrop-blur-md px-3 py-1 rounded-full border-t border-l border-white/40 shadow-sm cursor-pointer mr-1">
-        <span id="credits-text" class="font-label tracking-tight font-light uppercase text-[10px] text-neutral-600">3 Free</span>
-      </div>
-      <button onclick="openSearch()" class="material-symbols-outlined text-neutral-500 p-1.5 rounded-full hover:bg-white/20 transition-all text-xl">search</button>
-      <button onclick="navigateTo('settings')" class="material-symbols-outlined text-neutral-500 p-1.5 rounded-full hover:bg-white/20 transition-all text-xl">menu</button>
-    </div>
-  </header>
-
-  <!-- STATIC MAP LAYER -->
+<div id="app">
   <div id="map-view" class="absolute inset-0 z-0">
     <div id="gmap" class="absolute inset-0"></div>
     <div class="scrim-top pointer-events-none"></div>
     <div class="scrim-bottom pointer-events-none"></div>
   </div>
-
-  <!-- PAGE CONTAINER (Handles Accounts/Settings, is Transparent for Map) -->
-  <main id="page-container" class="flex-1 pt-14 pb-16 overflow-y-auto relative z-10 w-full"></main>
-
-  <!-- BOTTOM NAV -->
-  <nav id="bottomnav" class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 pt-2" style="padding-bottom: calc(env(safe-area-inset-bottom) + 12px); background: linear-gradient(to top, var(--c-surface) 0%, rgba(249,249,249,0.85) 50%, transparent 100%);">
-    <button onclick="navigateTo('map')" data-nav="map" class="nav-btn flex flex-col items-center justify-center p-2 rounded-full transition-all text-primary">
-      <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">map</span>
-      <span class="font-label text-[8px] uppercase tracking-widest font-medium mt-0.5">Map</span>
-    </button>
-    <div class="relative -top-4">
-      <button onclick="triggerDiscovery()" id="discover-fab" class="flex flex-col items-center justify-center bg-surface-tint text-on-primary rounded-full p-4 shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-transform">
-        <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">explore</span>
-      </button>
-      <span class="font-label text-[8px] uppercase tracking-widest font-bold mt-1 block text-center text-on-surface">Discover</span>
-    </div>
-    <button onclick="navigateTo('account')" data-nav="account" class="nav-btn flex flex-col items-center justify-center p-2 rounded-full transition-all text-on-surface-variant hover:text-on-surface">
-      <span class="material-symbols-outlined text-xl">person</span>
-      <span class="font-label text-[8px] uppercase tracking-widest font-medium mt-0.5">Account</span>
-    </button>
-  </nav>
+  <main id="page-container" class="relative z-10 w-full"></main>
 </div>
 
-<!-- ═══════════ SEARCH OVERLAY ═══════════ -->
+<header id="topbar" class="fixed top-0 w-full z-50 flex justify-between px-4 bg-white/10 backdrop-blur-[40px] border-b border-white/10 shadow-2xl shadow-black/5">
+  <div class="flex items-center gap-2 min-w-0 flex-1 mr-2">
+    <img src="icons/logo.png" alt="Wanderlost" style="width:clamp(22px,5vw,28px);height:clamp(22px,5vw,28px);object-fit:contain;border-radius:7px;flex-shrink:0;" />
+    <h1 class="text-base font-bold tracking-tighter text-on-surface truncate">Wanderlost</h1>
+  </div>
+  <div class="flex items-center gap-1.5 flex-shrink-0">
+    <div id="credits-badge" onclick="handleCreditsClick()" class="bg-white/40 backdrop-blur-md px-3 py-1 rounded-full border-t border-l border-white/40 shadow-sm cursor-pointer mr-1">
+      <span id="credits-text" class="font-label tracking-tight font-light uppercase text-[10px] text-neutral-600">3 Free</span>
+    </div>
+    <button onclick="openSearch()" class="material-symbols-outlined text-neutral-500 p-1.5 rounded-full hover:bg-white/20 transition-all">search</button>
+    <button onclick="navigateTo('settings')" class="material-symbols-outlined text-neutral-500 p-1.5 rounded-full hover:bg-white/20 transition-all">menu</button>
+  </div>
+</header>
+
+<nav id="bottomnav" class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center pt-2" style="background:linear-gradient(to top,var(--c-surface) 0%,rgba(249,249,249,0.85) 50%,transparent 100%);">
+  <button onclick="navigateTo('map')" data-nav="map" class="nav-btn flex flex-col items-center justify-center p-2 rounded-full transition-all text-primary">
+    <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1">map</span>
+    <span class="font-label text-[8px] uppercase tracking-widest font-medium mt-0.5">Map</span>
+  </button>
+  <div class="relative -top-4">
+    <button onclick="triggerDiscovery()" id="discover-fab" class="flex flex-col items-center justify-center bg-surface-tint text-on-primary rounded-full p-4 shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-2xl" style="font-variation-settings:'FILL' 1">explore</span>
+    </button>
+    <span class="font-label text-[8px] uppercase tracking-widest font-bold mt-1 block text-center text-on-surface">Discover</span>
+  </div>
+  <button onclick="navigateTo('account')" data-nav="account" class="nav-btn flex flex-col items-center justify-center p-2 rounded-full transition-all text-on-surface-variant hover:text-on-surface">
+    <span class="material-symbols-outlined text-xl">person</span>
+    <span class="font-label text-[8px] uppercase tracking-widest font-medium mt-0.5">Account</span>
+  </button>
+</nav>
+
 <div id="search-overlay" class="fixed inset-0 z-[100] bg-surface/90 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex flex-col">
   <div class="flex items-center gap-3 px-4 py-4 bg-surface shadow-sm">
     <button onclick="closeSearch()" class="material-symbols-outlined p-2 -ml-2 rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">arrow_back</button>
@@ -196,28 +182,22 @@ html.dark #splash-name { color: #e0fafa; }
   </div>
 </div>
 
-<!-- ═══════════ OVERLAYS ═══════════ -->
-
-<!-- Discovery Sheet -->
 <div id="discovery-sheet" class="fixed inset-x-0 bottom-0 z-[60]" style="transition:transform 0.45s cubic-bezier(0.22,1,0.36,1);transform:translateY(100%)">
-  <div id="discovery-content" class="rounded-t-[1.5rem] shadow-2xl shadow-black/25 max-h-[65vh] overflow-y-auto"></div>
+  <div id="discovery-content" class="rounded-t-[1.5rem] shadow-2xl shadow-black/25 overflow-y-auto"></div>
 </div>
 
-<!-- Premium Gate -->
 <div id="premium-gate" class="fixed inset-0 z-[70] bg-black/30 backdrop-blur-[60px] flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-300">
   <div id="premium-card" class="max-w-md w-full bg-white/10 backdrop-blur-[40px] rounded-xl glass-border shadow-2xl shadow-black/10 overflow-hidden p-8 text-center scale-95 transition-transform duration-300"></div>
 </div>
 
-<!-- Checkout Overlay -->
 <div id="checkout-overlay" class="fixed inset-0 z-[80] bg-surface overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
-  <div id="checkout-content" class="pt-20 pb-12 px-6 max-w-lg mx-auto"></div>
+  <div id="checkout-content" class="pb-12 px-6 w-full" style="padding-top:var(--topbar-h)"></div>
 </div>
 
-<!-- Legal Modal (T&C, Privacy, Safety) -->
 <div id="legal-modal" class="fixed inset-0 z-[90] bg-surface overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300">
   <div class="max-w-lg mx-auto px-6 pt-6 pb-16">
     <button onclick="closeLegalModal()" class="mb-4 flex items-center gap-1 text-on-surface-variant text-sm sticky top-4 z-10 bg-surface/80 backdrop-blur-md py-2 px-3 rounded-full">
-      <span class="material-symbols-outlined text-lg">arrow_back</span> Back to Settings
+      <span class="material-symbols-outlined text-lg">arrow_back</span> Back
     </button>
     <div id="legal-content" class="page-enter"></div>
   </div>

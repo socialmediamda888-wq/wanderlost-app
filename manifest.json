@@ -4,8 +4,9 @@
   "description": "Discover extraordinary places around you.",
   "start_url": "/wanderlost-app/",
   "scope": "/wanderlost-app/",
-  "display": "standalone",
-  "orientation": "portrait",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
+  "edge_to_edge": true,
   "background_color": "#f5fffe",
   "theme_color": "#f5fffe",
   "icons": [

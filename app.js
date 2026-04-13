@@ -1,11 +1,9 @@
 /* ═══════════ WANDERLOST APP ENGINE ═══════════ */
 
-// ── System dark mode detection ──
 (function() {
   const saved = localStorage.getItem('wl_theme');
   if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     document.documentElement.classList.add('dark');
-    // state will be updated to 'dark' after it's declared — handled in init
     window._initialTheme = 'dark';
   }
 })();
@@ -27,52 +25,24 @@ const CATEGORIES = [
   { id:'store', name:'Artisan Workshops', icon:'handyman' },
 ];
 
-const MAP_STYLE_LIGHT = [
-  { elementType:'geometry', stylers:[{color:'#f2f2f0'}] },
-  { elementType:'labels.icon', stylers:[{visibility:'off'}] },
-  { elementType:'labels.text.fill', stylers:[{color:'#8c8c8c'}] },
-  { elementType:'labels.text.stroke', stylers:[{color:'#f5f5f5'}] },
-  { featureType:'poi', stylers:[{visibility:'off'}] },
-  { featureType:'road', elementType:'geometry', stylers:[{color:'#fff'}] },
-  { featureType:'road', elementType:'labels', stylers:[{visibility:'off'}] },
-  { featureType:'transit', stylers:[{visibility:'off'}] },
-  { featureType:'water', elementType:'geometry', stylers:[{color:'#c8d0d8'}] },
-  { featureType:'administrative.land_parcel', elementType:'labels', stylers:[{visibility:'off'}] },
-];
-
-// ── State ──
 let state = {
-  page: 'map',
-  credits: 3,
-  isPremium: false,
-  user: null,
-  authTab: 'login',
-  activeCategory: 'restaurant',
-  currentPlace: null,
-  savedPlaces: [],
-  history: [],
-  itinerary: [],
-  userLocation: null,
-  searchCenter: null,
-  _geoResolved: false,
-  itineraryCityTab: null,
-  distanceUnit: 'meters',
-  theme: 'light',
-  selectedPlan: 'annual',
-  discoveredMarkers: [],
+  page: 'map', credits: 3, isPremium: false, user: null, authTab: 'login',
+  activeCategory: 'restaurant', currentPlace: null, savedPlaces: [], history: [],
+  userLocation: null, searchCenter: null, _geoResolved: false,
+  itineraryCityTab: null, distanceUnit: 'meters',
+  theme: window._initialTheme || 'light', selectedPlan: 'annual',
+  discoveredMarkers: [], _lastDiscoveryCategory: null,
 };
 
 let gmap, placesService, userMarker, poiMarkers = [];
-// Apply pre-detected theme to state
-if (window._initialTheme) state.theme = window._initialTheme;
 
-// ── Haversine ──
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371, r = Math.PI / 180;
   const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
 function formatDist(km) {
   if (state.distanceUnit === 'feet') {
     const ft = km * 3280.84;
@@ -80,13 +50,12 @@ function formatDist(km) {
   }
   return km < 1 ? Math.round(km * 1000) + 'm' : km.toFixed(1) + 'km';
 }
-// Manual check if place is open from periods array (fallback when isOpen() throws)
+
 function checkOpenFromPeriods(periods) {
   if (!periods || periods.length === 0) return null;
-  // If only one period with no close → open 24/7
   if (periods.length === 1 && periods[0].open && !periods[0].close) return true;
   const now = new Date();
-  const day = now.getDay(); // 0=Sun
+  const day = now.getDay();
   const time = now.getHours() * 100 + now.getMinutes();
   for (const period of periods) {
     if (!period.open || !period.close) continue;
@@ -95,18 +64,18 @@ function checkOpenFromPeriods(periods) {
       const closeDay = period.close.day;
       const closeTime = (period.close.hours || 0) * 100 + (period.close.minutes || 0);
       if (closeDay === day && time >= openTime && time < closeTime) return true;
-      if (closeDay !== day && time >= openTime) return true; // closes next day
+      if (closeDay !== day && time >= openTime) return true;
     }
   }
   return false;
 }
 
-// ── Navigation ──
 function navigateTo(page) {
   state.page = page;
   renderPage();
   updateNav();
 }
+
 function updateNav() {
   document.querySelectorAll('.nav-btn').forEach(b => {
     if (b.dataset.nav === state.page) {
@@ -119,11 +88,10 @@ function updateNav() {
       b.querySelector('span:first-child').style.fontVariationSettings = "'FILL' 0";
     }
   });
-  const topbar = document.getElementById('topbar');
-  topbar.style.display = state.page === 'checkout' ? 'none' : '';
-  const bottomnav = document.getElementById('bottomnav');
-  bottomnav.style.display = ['checkout','settings'].includes(state.page) ? 'none' : '';
+  document.getElementById('topbar').style.display = state.page === 'checkout' ? 'none' : '';
+  document.getElementById('bottomnav').style.display = ['checkout','settings'].includes(state.page) ? 'none' : '';
 }
+
 function updateCredits() {
   const el = document.getElementById('credits-text');
   if (!el) return;
@@ -132,16 +100,13 @@ function updateCredits() {
   if (state.credits <= 0) el.style.color = '#9f403d';
 }
 
-// ── Map Init ──
 let _mapsReady = false, _winReady = false, _animDone = false;
 
 function checkAppReady() {
   if (!_mapsReady || !_winReady || !_animDone) return;
-  // 1. Trigger the CSS zoom-fade-out on splash
   const splash = document.getElementById('splash');
-  const app    = document.getElementById('app');
+  const app = document.getElementById('app');
   if (splash) splash.classList.add('hidden');
-  // 2. After splash CSS transition finishes (0.55s), reveal the app
   setTimeout(() => {
     if (app) app.classList.add('ready');
     setTimeout(() => { if (splash) splash.remove(); }, 500);
@@ -150,14 +115,12 @@ function checkAppReady() {
 
 window.addEventListener('load', () => {
   _winReady = true;
-  // Drive dismissal from the logo animation completing
   const icon = document.getElementById('splash-icon');
   if (icon) {
     icon.addEventListener('animationend', () => {
       _animDone = true;
-      setTimeout(checkAppReady, 280); // brief pause after logo lands
+      setTimeout(checkAppReady, 280);
     }, { once: true });
-    // Safety: if CSS animations blocked/disabled, proceed after 2s
     setTimeout(() => { if (!_animDone) { _animDone = true; checkAppReady(); } }, 2000);
   } else {
     _animDone = true;
@@ -166,34 +129,25 @@ window.addEventListener('load', () => {
 });
 
 function onMapsReady() {
-  if (state.page === 'map') {
-    initMap();
-  } else {
-    _mapsReady = true;
-    checkAppReady();
-  }
+  if (state.page === 'map') initMap();
+  else { _mapsReady = true; checkAppReady(); }
   renderPage();
   updateNav();
 }
+
 function initMap() {
-  const container = document.getElementById('gmap');
-  if (!container) return;
-  const fallbackCenter = { lat: 48.8566, lng: 2.3522 };
-  const center = state.userLocation || fallbackCenter;
+  if (!document.getElementById('gmap')) return;
+  const center = state.userLocation || { lat: 48.8566, lng: 2.3522 };
   state.searchCenter = center;
   gmap = new google.maps.Map(document.getElementById('gmap'), {
     center, zoom: state.userLocation ? 15 : 3, mapId: MAP_ID,
     disableDefaultUI: true, gestureHandling: 'greedy',
-    styles: MAP_STYLE_LIGHT,
   });
-  
   google.maps.event.addListenerOnce(gmap, 'tilesloaded', () => {
     _mapsReady = true;
     checkAppReady();
   });
-
   placesService = new google.maps.places.PlacesService(gmap);
-
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
     const autocomplete = new google.maps.places.Autocomplete(searchInput, { types: ['(cities)'] });
@@ -204,7 +158,6 @@ function initMap() {
         gmap.panTo(state.searchCenter);
         gmap.setZoom(13);
         createUserMarker();
-        // Clear old discovered markers
         state.discoveredMarkers.forEach(m => { if (m.marker) m.marker.map = null; });
         state.discoveredMarkers = [];
         closeSearch();
@@ -218,15 +171,12 @@ function initMap() {
     gmap.panTo(state.searchCenter);
     gmap.setZoom(15);
     createUserMarker();
-    // Re-add discovered markers
-    state.discoveredMarkers.forEach(m => { if (m.position) addPoiMarkerDirect(m.position.lat, m.position.lng); });
+    state.discoveredMarkers.forEach(m => { if (m.position) addPoiMarker(m.position.lat, m.position.lng, false); });
   }
 }
+
 function requestUserLocation() {
-  if (!navigator.geolocation) {
-    showToast('Geolocation is not supported by your browser.');
-    return;
-  }
+  if (!navigator.geolocation) { showToast('Geolocation is not supported by your browser.'); return; }
   navigator.geolocation.getCurrentPosition(
     p => {
       state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude };
@@ -238,7 +188,6 @@ function requestUserLocation() {
         showToast('Location access denied. Please enable location in your browser settings.');
       } else if (err.code === err.TIMEOUT) {
         showToast('Location request timed out. Trying again…');
-        // Retry once with lower accuracy
         navigator.geolocation.getCurrentPosition(
           p => { state.userLocation = { lat: p.coords.latitude, lng: p.coords.longitude }; state.searchCenter = { ...state.userLocation }; flyIn(); },
           () => showToast('Could not get your location. Allow location access and refresh.'),
@@ -251,109 +200,75 @@ function requestUserLocation() {
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
 }
+
 function flyIn() {
   gmap.panTo(state.searchCenter);
   let target = 15;
   let z = gmap.getZoom();
   if (typeof z !== 'number' || isNaN(z)) z = 3;
-  if (z >= target) {
-    createUserMarker();
-    return;
-  }
+  if (z >= target) { createUserMarker(); return; }
   const iv = setInterval(() => {
-    if (z >= target - 0.1) {
-      clearInterval(iv);
-      gmap.setZoom(target);
-      createUserMarker();
-      return;
-    }
+    if (z >= target - 0.1) { clearInterval(iv); gmap.setZoom(target); createUserMarker(); return; }
     z += (target - z) * 0.12;
     gmap.setZoom(z);
   }, 25);
 }
+
 function createUserMarker() {
   if (userMarker) userMarker.map = null;
   const el = document.createElement('div');
-  el.style.cssText = 'position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center';
+  el.style.cssText = 'position:relative;width:clamp(44px,12vw,64px);height:clamp(44px,12vw,64px);display:flex;align-items:center;justify-content:center';
   el.innerHTML = '<div class="sonar-glow"></div><div class="sonar-ping"></div><div class="sonar-core"></div>';
   userMarker = new google.maps.marker.AdvancedMarkerElement({ position: state.userLocation || state.searchCenter, map: gmap, content: el });
 }
-function addPoiMarker(lat, lng) {
-  addPoiMarkerDirect(lat, lng);
-  state.discoveredMarkers.push({ position: { lat, lng } });
-}
-function addPoiMarkerDirect(lat, lng) {
+
+function addPoiMarker(lat, lng, persist = true) {
   const el = document.createElement('div');
-  el.style.cssText = 'position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center';
+  el.style.cssText = 'position:relative;width:clamp(28px,8vw,44px);height:clamp(28px,8vw,44px);display:flex;align-items:center;justify-content:center';
   el.innerHTML = '<div class="poi-pulse"></div><div class="poi-dot"></div>';
   const m = new google.maps.marker.AdvancedMarkerElement({ position: { lat, lng }, map: gmap, content: el });
   poiMarkers.push(m);
+  if (persist) state.discoveredMarkers.push({ position: { lat, lng } });
 }
 
-// ── Discovery Engine ──
-let _lastDiscoveryCategory = null;
 function triggerDiscovery() {
   if (!state.isPremium && state.credits <= 0) { showPremiumGate(); return; }
   if (!gmap) { showToast('Map is loading…'); return; }
-  if (!state.userLocation) {
-    showToast('Getting your location…');
-    requestUserLocation();
-    return;
-  }
-  if (!placesService) {
-    placesService = new google.maps.places.PlacesService(gmap);
-  }
-  // Loading state on FAB
+  if (!state.userLocation) { showToast('Getting your location…'); requestUserLocation(); return; }
+  if (!placesService) placesService = new google.maps.places.PlacesService(gmap);
   const fab = document.getElementById('discover-fab');
   if (fab) {
     fab.style.pointerEvents = 'none';
     fab.querySelector('.material-symbols-outlined').textContent = 'progress_activity';
     fab.classList.add('animate-pulse');
   }
-  // If no category selected, rotate through random categories (avoiding last used)
   let type = state.activeCategory;
   if (!type) {
-    const available = CATEGORIES.filter(c => c.id !== _lastDiscoveryCategory);
+    const available = CATEGORIES.filter(c => c.id !== state._lastDiscoveryCategory);
     type = available[Math.floor(Math.random() * available.length)].id;
   }
-  _lastDiscoveryCategory = type;
-  // Vary search radius to get different results each time
+  state._lastDiscoveryCategory = type;
   const radiusOptions = [1500, 2000, 2500, 3000, 3500, 4000, 5000];
   const radius = radiusOptions[Math.floor(Math.random() * radiusOptions.length)];
-  const request = {
+  placesService.nearbySearch({
     location: new google.maps.LatLng(state.searchCenter.lat, state.searchCenter.lng),
-    radius: radius,
-    type: type,
-  };
-  placesService.nearbySearch(request, (results, status) => {
-    // Reset FAB
+    radius, type,
+  }, (results, status) => {
     if (fab) {
       fab.style.pointerEvents = '';
       fab.querySelector('.material-symbols-outlined').textContent = 'explore';
       fab.classList.remove('animate-pulse');
     }
     if (status !== google.maps.places.PlacesServiceStatus.OK || !results || results.length === 0) {
-      showToast('No discoveries nearby. Try a different category!');
-      return;
+      showToast('No discoveries nearby. Try a different category!'); return;
     }
-    // First, filter out places the user has already discovered
     const discoveredIds = new Set(state.history.map(h => h.id));
     const fresh = results.filter(p => !discoveredIds.has(p.place_id));
-    
-    // Categorize remaining fresh places by quality tiers
     const exceptional = fresh.filter(r => (r.rating || 0) >= 4.8 && (r.user_ratings_total || 0) >= 5);
     const good = fresh.filter(r => (r.rating || 0) >= 4.5 && (r.user_ratings_total || 0) >= 10);
     const decent = fresh.filter(r => (r.rating || 0) >= 4.0);
-    
-    // Pick the highest available tier of undiscovered places
-    let candidates = exceptional.length > 0 ? exceptional 
-      : good.length > 0 ? good 
-      : decent.length > 0 ? decent 
-      : fresh;
-      
-    // If we have literally seen everything in this radius, recycle the pool
+    let candidates = exceptional.length > 0 ? exceptional : good.length > 0 ? good : decent.length > 0 ? decent : fresh;
     if (candidates.length === 0) candidates = results;
-    // Shuffle the entire candidate list (Fisher-Yates) for true randomness
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
@@ -366,12 +281,10 @@ function triggerDiscovery() {
     const categoryName = CATEGORIES.find(c => c.id === type)?.name || 'Hidden Gem';
     const basicOpen = pick.opening_hours != null ? (pick.opening_hours.open_now === true ? true : pick.opening_hours.open_now === false ? false : null) : null;
     state.currentPlace = {
-      id: pick.place_id, name: pick.name,
-      category: categoryName,
+      id: pick.place_id, name: pick.name, category: categoryName,
       distance: formatDist(dist), address: pick.vicinity,
       rating: pick.rating, reviews: pick.user_ratings_total || 0,
-      isOpen: basicOpen,
-      lat, lng,
+      isOpen: basicOpen, lat, lng,
       city: pick.vicinity ? pick.vicinity.split(',').pop().trim() : 'Unknown City',
       day: 'Unscheduled'
     };
@@ -382,35 +295,21 @@ function triggerDiscovery() {
     addPoiMarker(lat, lng);
     showDiscoverySheet();
     if (state.page !== 'map') navigateTo('map');
-    // Fetch detailed info (opening hours, phone, website) in background
     const _pickId = pick.place_id;
-  try {
+    try {
       placesService.getDetails(
-        { placeId: _pickId, fields: ['opening_hours', 'current_opening_hours', 'business_status', 'formatted_phone_number', 'website', 'url', 'address_components'] },
+        { placeId: _pickId, fields: ['opening_hours', 'business_status', 'formatted_phone_number', 'website', 'url', 'address_components'] },
         (detail, detailStatus) => {
           if (!state.currentPlace || state.currentPlace.id !== _pickId) return;
           state.currentPlace._detailsFetched = true;
-          if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !detail) {
-            console.warn('Place details fetch failed:', detailStatus);
-            showDiscoverySheet();
-            return;
-          }
-          // Update open status from detailed data
+          if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !detail) { showDiscoverySheet(); return; }
           if (detail.opening_hours) {
-            try {
-              state.currentPlace.isOpen = detail.opening_hours.isOpen() ? true : false;
-            } catch (e) {
-              // isOpen() can throw if hours data is incomplete
-              if (detail.opening_hours.periods) {
-                state.currentPlace.isOpen = checkOpenFromPeriods(detail.opening_hours.periods);
-              }
-            }
+            try { state.currentPlace.isOpen = detail.opening_hours.isOpen() ? true : false; }
+            catch (e) { if (detail.opening_hours.periods) state.currentPlace.isOpen = checkOpenFromPeriods(detail.opening_hours.periods); }
           }
           if (detail.business_status) {
             state.currentPlace.businessStatus = detail.business_status;
-            if (detail.business_status === 'CLOSED_TEMPORARILY' || detail.business_status === 'CLOSED_PERMANENTLY') {
-              state.currentPlace.isOpen = false;
-            }
+            if (detail.business_status === 'CLOSED_TEMPORARILY' || detail.business_status === 'CLOSED_PERMANENTLY') state.currentPlace.isOpen = false;
           }
           if (detail.formatted_phone_number) state.currentPlace.phone = detail.formatted_phone_number;
           if (detail.website) state.currentPlace.website = detail.website;
@@ -419,30 +318,21 @@ function triggerDiscovery() {
             const cityComp = detail.address_components.find(c => c.types.includes('locality') || c.types.includes('postal_town'));
             if (cityComp) state.currentPlace.city = cityComp.long_name;
           }
-          // Update history entry too
           const histEntry = state.history.find(h => h.id === _pickId);
-          if (histEntry) {
-            histEntry.isOpen = state.currentPlace.isOpen;
-            histEntry.city = state.currentPlace.city;
-          }
-          // Re-render sheet with updated info
+          if (histEntry) { histEntry.isOpen = state.currentPlace.isOpen; histEntry.city = state.currentPlace.city; }
           showDiscoverySheet();
         }
       );
-    } catch (e) {
-      console.warn('getDetails call error:', e);
-      if (state.currentPlace) state.currentPlace._detailsFetched = true;
-    }
+    } catch (e) { if (state.currentPlace) state.currentPlace._detailsFetched = true; }
   });
 }
 
-// ── Toast Notification ──
 function showToast(msg) {
   let toast = document.getElementById('app-toast');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'app-toast';
-    toast.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 24px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:0.02em;pointer-events:none;opacity:0;transition:opacity 0.3s;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);';
+    toast.style.cssText = 'position:fixed;top:calc(3.5rem + env(safe-area-inset-top, 0px) + 0.5rem);left:50%;transform:translateX(-50%);z-index:999;padding:0.75em 1.5em;border-radius:999px;font-size:clamp(11px,3vw,13px);font-weight:600;letter-spacing:0.02em;pointer-events:none;opacity:0;transition:opacity 0.3s;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);white-space:nowrap;max-width:calc(100vw - 3rem);text-overflow:ellipsis;overflow:hidden;';
     document.body.appendChild(toast);
   }
   const isDark = state.theme === 'dark';
@@ -455,23 +345,21 @@ function showToast(msg) {
   toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
-// ── Discovery Sheet ──
 function showDiscoverySheet() {
   const p = state.currentPlace; if (!p) return;
   const isSaved = state.savedPlaces.some(s => s.id === p.id);
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}&query_place_id=${p.id}`;
   let openStatus;
   if (p.isOpen === true) {
-    openStatus = '<span style="color:#10b981;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.1);padding:4px 10px;border-radius:999px"><span style="font-size:8px">●</span> Open Now</span>';
+    openStatus = '<span style="color:#10b981;font-weight:700;font-size:clamp(0.6875rem,2.5vw,0.75rem);display:inline-flex;align-items:center;gap:0.25rem;background:rgba(16,185,129,0.1);padding:0.25rem 0.625rem;border-radius:999px"><span style="font-size:0.6em">●</span> Open Now</span>';
   } else if (p.isOpen === false) {
     const closedLabel = p.businessStatus === 'CLOSED_PERMANENTLY' ? 'Permanently Closed' : p.businessStatus === 'CLOSED_TEMPORARILY' ? 'Temporarily Closed' : 'Closed';
-    openStatus = `<span style="color:#ef4444;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,0.1);padding:4px 10px;border-radius:999px"><span style="font-size:8px">●</span> ${closedLabel}</span>`;
+    openStatus = `<span style="color:#ef4444;font-weight:700;font-size:clamp(0.6875rem,2.5vw,0.75rem);display:inline-flex;align-items:center;gap:0.25rem;background:rgba(239,68,68,0.1);padding:0.25rem 0.625rem;border-radius:999px"><span style="font-size:0.6em">●</span> ${closedLabel}</span>`;
   } else if (p._detailsFetched) {
-    openStatus = `<a href="${mapUrl}" target="_blank" rel="noopener" style="color:var(--c-primary);font-weight:600;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:3px">Check hours <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span></a>`;
+    openStatus = `<a href="${mapUrl}" target="_blank" rel="noopener" style="color:var(--c-primary);font-weight:600;font-size:clamp(0.625rem,2vw,0.6875rem);text-decoration:none;display:inline-flex;align-items:center;gap:0.1875rem">Check hours <span class="material-symbols-outlined" style="font-size:clamp(0.8125rem,2.5vw,0.875rem)">open_in_new</span></a>`;
   } else {
-    openStatus = '<span style="color:var(--c-on-surface-variant);opacity:0.5;font-size:11px;display:inline-flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:14px;animation:spin 1s linear infinite">progress_activity</span> Checking hours…</span>';
+    openStatus = '<span style="color:var(--c-on-surface-variant);opacity:0.5;font-size:clamp(0.625rem,2vw,0.6875rem);display:inline-flex;align-items:center;gap:0.25rem"><span class="material-symbols-outlined" style="font-size:clamp(0.8125rem,2.5vw,0.875rem);animation:spin 1s linear infinite">progress_activity</span> Checking hours…</span>';
   }
-  // Star rating display
   const stars = p.rating ? Array.from({length: 5}, (_, i) => {
     const fill = p.rating >= i + 1 ? 1 : p.rating >= i + 0.5 ? 0.5 : 0;
     return `<span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' ${fill >= 0.5 ? 1 : 0};color:${fill > 0 ? '#f59e0b' : 'var(--c-outline-variant)'}">star</span>`;
@@ -514,126 +402,90 @@ function showDiscoverySheet() {
   sheet.style.opacity = '1';
   initSheetDrag();
 }
-function collapseSheet() {
+
+function dismissSheet() {
   const sheet = document.getElementById('discovery-sheet');
   sheet.style.transform = 'translateY(100%)';
   sheet.style.opacity = '0';
-}
-function dismissSheet() {
-  collapseSheet();
   state.currentPlace = null;
   if (state.searchCenter && gmap) { gmap.panTo(state.searchCenter); gmap.setZoom(15); }
 }
 
-// ── Sheet Drag Gesture ──
 function initSheetDrag() {
-  const sheet  = document.getElementById('discovery-sheet');
+  const sheet = document.getElementById('discovery-sheet');
   const handle = document.getElementById('sheet-drag-handle');
   if (!sheet || !handle) return;
-
   let startY = 0, lastY = 0, lastTime = 0, dragging = false;
-
-  function onStart(clientY) {
-    startY   = clientY;
-    lastY    = clientY;
-    lastTime = Date.now();
-    dragging = true;
-    sheet.style.transition = 'none';
-  }
-  function onMove(clientY) {
-    if (!dragging) return;
-    const delta = Math.max(0, clientY - startY); // only downward
-    sheet.style.transform = `translateY(${delta}px)`;
-    lastY = clientY;
-    lastTime = Date.now();
-  }
+  function onStart(clientY) { startY = clientY; lastY = clientY; lastTime = Date.now(); dragging = true; sheet.style.transition = 'none'; }
+  function onMove(clientY) { if (!dragging) return; sheet.style.transform = `translateY(${Math.max(0, clientY - startY)}px)`; lastY = clientY; lastTime = Date.now(); }
   function onEnd(clientY) {
     if (!dragging) return;
     dragging = false;
     sheet.style.transition = 'transform 0.4s cubic-bezier(0.22,1,0.36,1)';
-    const delta    = clientY - startY;
-    const elapsed  = Date.now() - lastTime + 1;
-    const velocity = (clientY - lastY) / elapsed; // px/ms
-    if (delta > 120 || velocity > 0.5) {
-      dismissSheet();
-    } else {
-      // Snap back
-      sheet.style.transform = 'translateY(0)';
-    }
+    const delta = clientY - startY;
+    const velocity = (clientY - lastY) / (Date.now() - lastTime + 1);
+    if (delta > 120 || velocity > 0.5) dismissSheet();
+    else sheet.style.transform = 'translateY(0)';
   }
-
-  // Touch
   handle.addEventListener('touchstart', e => onStart(e.touches[0].clientY), { passive: true });
-  handle.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e.touches[0].clientY); }, { passive: false });
-  handle.addEventListener('touchend',   e => onEnd(e.changedTouches[0].clientY), { passive: true });
-
-  // Mouse (desktop fallback)
-  handle.addEventListener('mousedown', e => { onStart(e.clientY); });
+  handle.addEventListener('touchmove', e => { e.preventDefault(); onMove(e.touches[0].clientY); }, { passive: false });
+  handle.addEventListener('touchend', e => onEnd(e.changedTouches[0].clientY), { passive: true });
+  handle.addEventListener('mousedown', e => onStart(e.clientY));
   document.addEventListener('mousemove', e => { if (dragging) onMove(e.clientY); });
-  document.addEventListener('mouseup',   e => { if (dragging) onEnd(e.clientY); });
+  document.addEventListener('mouseup', e => { if (dragging) onEnd(e.clientY); });
 }
+
 function toggleSave() {
   const p = state.currentPlace; if (!p) return;
   const idx = state.savedPlaces.findIndex(s => s.id === p.id);
-  if (idx >= 0) {
-    state.savedPlaces.splice(idx, 1);
-  } else {
-    state.savedPlaces.push({ 
-      ...p, 
-      city: p.city || 'Unknown City', 
-      day: p.day || 'Unscheduled' 
-    });
-  }
+  if (idx >= 0) state.savedPlaces.splice(idx, 1);
+  else state.savedPlaces.push({ ...p, city: p.city || 'Unknown City', day: p.day || 'Unscheduled' });
   showDiscoverySheet();
 }
 
-// ── Premium Gate ──
 const PREMIUM_FEATURES = [
-  { icon: 'all_inclusive',  label: 'Unlimited discoveries' },
-  { icon: 'tune',           label: 'Filter by category'    },
-  { icon: 'schedule',       label: 'Live availability'     },
-  { icon: 'history',        label: 'Discovery history'     },
-  { icon: 'bookmark_added', label: 'Save places'           },
-  { icon: 'map',            label: 'Build itineraries'     },
+  { icon: 'all_inclusive', label: 'Unlimited discoveries' },
+  { icon: 'tune', label: 'Filter by category' },
+  { icon: 'schedule', label: 'Live availability' },
+  { icon: 'history', label: 'Discovery history' },
+  { icon: 'bookmark_added', label: 'Save places' },
+  { icon: 'map', label: 'Build itineraries' },
 ];
+
 function showPremiumGate() {
   const gate = document.getElementById('premium-gate');
   const card = document.getElementById('premium-card');
   card.innerHTML = `
-    <!-- Teal gradient header -->
-    <div style="margin:-32px -32px 24px;padding:32px 32px 28px;background:linear-gradient(135deg,#1aafa8 0%,#2CD7D7 60%,#5ef0ea 100%);border-radius:1.5rem 1.5rem 0 0;position:relative;overflow:hidden;">
+    <div style="margin:-2rem -2rem 1.5rem;padding:2rem 2rem 1.75rem;background:linear-gradient(135deg,#1aafa8 0%,#2CD7D7 60%,#5ef0ea 100%);border-radius:1.5rem 1.5rem 0 0;position:relative;overflow:hidden;">
       <div style="position:absolute;inset:0;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><circle cx=%22160%22 cy=%2230%22 r=%2280%22 fill=%22white%22 opacity=%220.06%22/><circle cx=%2230%22 cy=%22150%22 r=%2260%22 fill=%22white%22 opacity=%220.04%22/></svg>');pointer-events:none;"></div>
-      <img src="icons/splash-logo.png" alt="" style="width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.2));margin-bottom:16px;display:block;margin-left:auto;margin-right:auto;"/>
-      <h1 style="font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.04em;color:#fff;line-height:1.2;margin-bottom:6px;">Unlock the<br>possibilities.</h1>
-      <p style="font-family:'Manrope',sans-serif;font-size:12px;color:rgba(255,255,255,0.8);line-height:1.5;">Join a curated world of modern explorers.</p>
+      <img src="icons/splash-logo.png" alt="" style="width:clamp(56px,15vw,80px);height:clamp(56px,15vw,80px);object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.2));margin-bottom:1rem;display:block;margin-left:auto;margin-right:auto;"/>
+      <h1 style="font-family:'Manrope',sans-serif;font-size:clamp(1.25rem,5vw,1.625rem);font-weight:800;letter-spacing:-0.04em;color:#fff;line-height:1.2;margin-bottom:0.375rem;">Unlock the<br>possibilities.</h1>
+      <p style="font-family:'Manrope',sans-serif;font-size:clamp(0.7rem,2.5vw,0.75rem);color:rgba(255,255,255,0.8);line-height:1.5;">Join a curated world of modern explorers.</p>
     </div>
-
-    <!-- Feature grid -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(47%,180px),1fr));gap:0.625rem;margin-bottom:1.25rem;">
       ${PREMIUM_FEATURES.map(f => `
-        <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(44,215,215,0.08);border:1px solid rgba(44,215,215,0.2);border-radius:14px;">
-          <div style="width:32px;height:32px;border-radius:50%;background:rgba(44,215,215,0.15);border:1.5px solid rgba(44,215,215,0.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <span class="material-symbols-outlined" style="font-size:16px;color:#2CD7D7;font-variation-settings:'FILL' 1">${f.icon}</span>
+        <div style="display:flex;align-items:center;gap:0.625rem;padding:0.75rem;background:rgba(44,215,215,0.08);border:1px solid rgba(44,215,215,0.2);border-radius:0.875rem;">
+          <div style="width:2rem;height:2rem;border-radius:50%;background:rgba(44,215,215,0.15);border:1.5px solid rgba(44,215,215,0.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span class="material-symbols-outlined" style="font-size:clamp(13px,3.5vw,16px);color:#2CD7D7;font-variation-settings:'FILL' 1">${f.icon}</span>
           </div>
-          <span style="font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;color:var(--c-on-surface);line-height:1.3;">${f.label}</span>
+          <span style="font-family:'Manrope',sans-serif;font-size:clamp(9px,2.5vw,11px);font-weight:700;color:var(--c-on-surface);line-height:1.3;">${f.label}</span>
         </div>
       `).join('')}
     </div>
-
-    <!-- CTA -->
-    <button onclick="navigateTo('checkout'); closePremiumGate();"
-      style="width:100%;padding:16px;border-radius:999px;border:none;cursor:pointer;font-family:'Manrope',sans-serif;font-size:13px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#0d3333;background:linear-gradient(90deg,#22b8b8,#2CD7D7,#5ef0f0,#2CD7D7,#22b8b8);background-size:200% auto;animation:shimmerBtn 2.5s linear infinite;box-shadow:0 8px 24px rgba(44,215,215,0.4);margin-bottom:14px;transition:transform 0.15s,box-shadow 0.15s;"
-      onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+    <button onclick="openCheckout()"
+      class="w-full active:scale-[0.97] transition-transform"
+      style="padding:1rem;border-radius:999px;border:none;cursor:pointer;font-family:'Manrope',sans-serif;font-size:clamp(0.75rem,2.5vw,0.8125rem);font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#0d3333;background:linear-gradient(90deg,#22b8b8,#2CD7D7,#5ef0f0,#2CD7D7,#22b8b8);background-size:200% auto;animation:shimmerBtn 2.5s linear infinite;box-shadow:0 0.5rem 1.5rem rgba(44,215,215,0.4);margin-bottom:0.875rem;">
       ✦ &nbsp;Unlock Premium
     </button>
     <button onclick="closePremiumGate()"
-      style="background:none;border:none;cursor:pointer;font-family:'Manrope',sans-serif;font-size:12px;font-weight:500;color:var(--c-on-surface-variant);letter-spacing:0.05em;padding:4px 12px;border-radius:999px;transition:color 0.2s;"
+      style="background:none;border:none;cursor:pointer;font-family:'Manrope',sans-serif;font-size:clamp(0.6875rem,2vw,0.75rem);font-weight:500;color:var(--c-on-surface-variant);letter-spacing:0.05em;padding:0.25rem 0.75rem;border-radius:999px;transition:color 0.2s;"
       onmouseover="this.style.color='var(--c-on-surface)'" onmouseout="this.style.color='var(--c-on-surface-variant)'">
       Maybe Later
     </button>`;
   gate.style.opacity = '1'; gate.style.pointerEvents = 'auto';
   card.classList.remove('scale-95'); card.classList.add('scale-100');
 }
+
 function closePremiumGate() {
   const gate = document.getElementById('premium-gate');
   const card = document.getElementById('premium-card');
@@ -641,19 +493,21 @@ function closePremiumGate() {
   card.classList.add('scale-95'); card.classList.remove('scale-100');
 }
 
-// ── Page Renderers ──
 function renderPage() {
   const c = document.getElementById('page-container');
   const mv = document.getElementById('map-view');
-  
   if (state.page === 'map') {
     mv.classList.remove('hidden');
-    c.innerHTML = ''; // Keep container empty
-    c.className = 'flex-1 pt-0 pb-0 overflow-hidden relative z-10 w-full pointer-events-none';
+    c.innerHTML = '';
+    c.style.background = 'transparent';
+    c.style.pointerEvents = 'none';
+    c.style.overflowY = 'hidden';
     renderMapOverlay(c);
   } else {
     mv.classList.add('hidden');
-    c.className = 'flex-1 pt-14 pb-20 overflow-y-auto bg-surface relative z-10 w-full pointer-events-auto';
+    c.style.background = 'var(--c-surface)';
+    c.style.pointerEvents = 'auto';
+    c.style.overflowY = 'auto';
     switch(state.page) {
       case 'account': renderAccount(c); break;
       case 'settings': renderSettings(c); break;
@@ -664,21 +518,9 @@ function renderPage() {
 }
 
 function renderMapOverlay(c) {
-  c.innerHTML = `
-    <div class="absolute top-16 left-3 right-3 z-10 pointer-events-auto">
-      <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-3" id="cat-strip"></div>
-    </div>`;
+  c.innerHTML = `<div class="cat-container"><div class="flex overflow-x-auto hide-scrollbar gap-2 pb-3" id="cat-strip"></div></div>`;
   renderCategories();
-  // Only init map once; subsequent navigations reuse the existing instance
-  if (!gmap) {
-    setTimeout(() => {
-      if (typeof google !== 'undefined') initMap();
-    }, 100);
-  } else {
-    // Move the existing map container back to the DOM anchor
-    const gmapDiv = document.getElementById('gmap');
-    if (gmapDiv) google.maps.event.trigger(gmap, 'resize');
-  }
+  if (!gmap) { setTimeout(() => { if (typeof google !== 'undefined') initMap(); }, 100); }
 }
 
 function renderCategories() {
@@ -699,17 +541,13 @@ function selectCategory(id) {
 }
 
 function renderAccount(c) {
-  c.className = 'flex-1 pt-14 pb-20 overflow-y-auto';
   const isLogin = state.authTab === 'login';
   const memberType = state.isPremium ? 'Premium Explorer' : 'Standard Member';
-  c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 max-w-lg mx-auto">
-    <!-- Auth Tabs -->
+  c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 w-full">
     <div class="flex gap-8 items-end mb-6">
       <button onclick="state.authTab='login'; navigateTo('account')" class="font-headline text-3xl ${isLogin ? 'font-light border-b-2 border-surface-tint' : 'font-extralight text-on-surface-variant'} tracking-tighter pb-1">Log In</button>
       <button onclick="state.authTab='register'; navigateTo('account')" class="font-headline text-xl ${!isLogin ? 'font-light border-b-2 border-surface-tint' : 'font-extralight text-on-surface-variant'} tracking-tighter pb-1">Register</button>
     </div>
-    
-    <!-- Auth Form -->
     <div class="mb-10">
       ${isLogin ? `
       <form onsubmit="event.preventDefault(); handleLogin(this)" class="flex flex-col gap-5">
@@ -725,20 +563,12 @@ function renderAccount(c) {
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">PASSWORD</label><input id="reg-pass" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Password" type="password" required/></div>
         <div><label class="font-label text-[10px] tracking-widest text-on-surface-variant px-3 mb-1 block">CONFIRM PASSWORD</label><input id="reg-pass2" class="w-full bg-surface-container-low border-none rounded-full py-4 px-6 placeholder:text-stone-400 focus:bg-surface-container-high transition-colors" placeholder="Confirm password" type="password" required/></div>
         <label class="flex items-start gap-3 px-1 cursor-pointer group">
-          <input id="reg-terms" type="checkbox" required
-            class="mt-0.5 w-4 h-4 rounded accent-primary flex-shrink-0 cursor-pointer"/>
-          <span class="text-xs text-on-surface-variant leading-relaxed">
-            By registering you agree to our
-            <a href="terms.html" target="_blank" rel="noopener noreferrer"
-              class="text-primary font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity">
-              Terms and Conditions</a>.
-          </span>
+          <input id="reg-terms" type="checkbox" required class="mt-0.5 w-4 h-4 rounded accent-primary flex-shrink-0 cursor-pointer"/>
+          <span class="text-xs text-on-surface-variant leading-relaxed">By registering you agree to our <a href="terms.html" target="_blank" rel="noopener noreferrer" class="text-primary font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity">Terms and Conditions</a>.</span>
         </label>
         <button type="submit" class="mt-2 py-4 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs shadow-xl active:scale-[0.98] transition-transform">REGISTER ACCOUNT</button>
       </form>`}
     </div>
-
-    <!-- Member Status -->
     <div class="p-6 rounded-lg bg-surface-container-low mb-4">
       <div class="flex justify-between items-start mb-3">
         <div><h3 class="font-headline text-lg font-semibold">Member Status</h3><p class="text-on-surface-variant text-xs mt-0.5">Unlock exclusive itineraries and local secrets.</p></div>
@@ -750,8 +580,6 @@ function renderAccount(c) {
       </div>
       ${!state.isPremium ? '<button onclick="showPremiumGate()" class="w-full py-3.5 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform">JOIN PREMIUM <span class="material-symbols-outlined text-sm">arrow_forward</span></button>' : '<p class="text-xs text-on-surface-variant">Next payment: May 7, 2026</p>'}
     </div>
-
-    <!-- History + Itinerary -->
     <div class="grid grid-cols-2 gap-3 mb-8">
       <button onclick="showHistory()" class="flex flex-col items-center justify-center p-5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors">
         <span class="material-symbols-outlined text-2xl mb-2 text-stone-500">history</span><span class="font-label text-[10px] tracking-widest text-stone-600">HISTORY</span>
@@ -764,12 +592,10 @@ function renderAccount(c) {
 }
 
 function renderSettings(c) {
-  c.className = 'flex-1 pt-14 pb-8 overflow-y-auto';
-  c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 max-w-lg mx-auto">
+  c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 w-full">
     <button onclick="navigateTo('map')" class="mb-4 flex items-center gap-1 text-on-surface-variant text-sm"><span class="material-symbols-outlined text-lg">arrow_back</span> Back</button>
     <span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1 block">Personalization</span>
     <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface mb-8">Settings</h1>
-    <!-- Membership -->
     <h2 class="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-4 ml-1">Membership</h2>
     <div class="bg-surface-container-lowest rounded-lg p-5 mb-8 shadow-xl shadow-black/5">
       <div class="flex justify-between items-center mb-4">
@@ -782,7 +608,6 @@ function renderSettings(c) {
         <button onclick="showConfirm('Cancel Membership?','Your premium access will remain active until the end of your billing period.',cancelMembership)" class="w-full flex justify-between items-center py-2 hover:bg-surface-container-low rounded-lg px-2 transition-colors"><span class="font-medium text-sm text-error">Cancel Membership</span><span class="material-symbols-outlined text-outline-variant text-lg">chevron_right</span></button>
       </div>` : `<button onclick="showPremiumGate()" class="w-full py-3 rounded-full bg-surface-tint text-on-primary font-label tracking-widest text-xs mt-2 active:scale-95 transition-transform">JOIN PREMIUM</button>`}
     </div>
-    <!-- Preferences -->
     <h2 class="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-4 ml-1">Preferences</h2>
     <div class="bg-surface-container-lowest rounded-lg p-5 mb-3 shadow-xl shadow-black/5">
       <div class="flex justify-between items-center"><span class="font-bold text-sm">Distance Units</span>
@@ -800,7 +625,6 @@ function renderSettings(c) {
         </div>
       </div>
     </div>
-    <!-- Support -->
     <h2 class="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-4 ml-1">Support & Legal</h2>
     <div class="bg-surface-container-lowest rounded-lg overflow-hidden mb-8 shadow-xl shadow-black/5">
       <button onclick="openHelpCenter()" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">help_center</span><span class="flex-1 font-bold text-sm">Help Center & Support</span><span class="material-symbols-outlined text-outline-variant text-lg">open_in_new</span></button>
@@ -808,7 +632,6 @@ function renderSettings(c) {
       <button onclick="showLegal('privacy')" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">shield_person</span><span class="flex-1 font-bold text-sm">Privacy & Policy</span><span class="material-symbols-outlined text-outline-variant text-lg">chevron_right</span></button>
       <button onclick="showLegal('safety')" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-primary">health_and_safety</span><span class="flex-1 font-bold text-sm">Safety Measures</span><span class="material-symbols-outlined text-outline-variant text-lg">chevron_right</span></button>
     </div>
-    <!-- Account Actions -->
     <h2 class="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-4 ml-1">Account Actions</h2>
     <div class="bg-surface-container-lowest rounded-lg overflow-hidden mb-8 shadow-xl shadow-black/5">
       <button onclick="logOut()" class="w-full flex items-center gap-3 p-5 hover:bg-surface-container-low transition-colors text-left"><span class="material-symbols-outlined text-on-surface">logout</span><span class="flex-1 font-bold text-sm">Log out</span></button>
@@ -820,19 +643,17 @@ function renderSettings(c) {
 }
 
 function renderCheckout(c) {
-  c.className = 'flex-1 pt-0 pb-0 overflow-y-auto';
   const isAnnual = state.selectedPlan === 'annual';
   const price = isAnnual ? '$100.00' : '$10.00';
   c.innerHTML = `<div class="page-enter">
-    <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-[40px] flex justify-between items-center px-6 py-4">
+    <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-[40px] flex justify-between items-end px-6 pb-2" style="height:var(--topbar-h);padding-top:var(--sat)">
       <div class="flex items-center gap-2"><button onclick="navigateTo('map')" class="material-symbols-outlined text-on-surface-variant">arrow_back</button><h1 class="text-xl font-semibold tracking-tighter text-on-surface">Wanderlost</h1></div>
       <span class="material-symbols-outlined text-on-surface-variant">lock</span>
     </header>
-    <div class="pt-24 pb-12 px-6 max-w-lg mx-auto">
+    <div class="pb-12 px-6 w-full" style="padding-top:var(--topbar-h)">
       <p class="text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Checkout</p>
       <h2 class="text-3xl font-extrabold tracking-tight mb-3">Secure Checkout</h2>
       <p class="text-on-surface-variant text-sm font-light leading-relaxed mb-8">Choose your path to the extraordinary. Unlimited access to curated escapes and hidden gems.</p>
-      <!-- Plans -->
       <label class="text-[10px] uppercase tracking-widest font-bold text-stone-500 px-1 mb-3 block">Select your plan</label>
       <div class="grid grid-cols-2 gap-3 mb-8">
         <div onclick="state.selectedPlan='annual'; navigateTo('checkout')" class="cursor-pointer p-5 rounded-lg transition-all ${isAnnual ? 'bg-surface-container-lowest ring-2 ring-primary' : 'bg-surface-container-low'}">
@@ -847,21 +668,18 @@ function renderCheckout(c) {
           <div class="mt-2"><span class="text-2xl font-extrabold">$10</span><span class="text-on-surface-variant text-xs">/ month</span></div>
         </div>
       </div>
-      <!-- Express Checkout -->
       <label class="text-[10px] uppercase tracking-widest font-bold text-stone-500 px-1 mb-3 block">Express Checkout</label>
       <div class="grid grid-cols-2 gap-3 mb-6">
         <button onclick="showToast('Apple Pay is not available in this demo.')" class="h-12 bg-black text-white rounded-full font-semibold text-sm active:scale-95 transition-transform"> Apple Pay</button>
         <button onclick="showToast('Google Pay is not available in this demo.')" class="h-12 bg-surface-container-highest border border-outline-variant/20 rounded-full font-semibold text-sm active:scale-95 transition-transform">Google Pay</button>
       </div>
-      <!-- Card Form -->
       <div class="flex items-center gap-3 mb-6"><div class="h-px flex-1 bg-surface-container-highest"></div><span class="text-[10px] uppercase tracking-widest font-bold text-stone-400">Or Pay by card</span><div class="h-px flex-1 bg-surface-container-highest"></div></div>
       <div class="space-y-3 mb-8">
         <input class="w-full h-12 px-5 bg-surface-container-low border-none rounded-full focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-stone-400 text-sm" placeholder="Cardholder Name" type="text"/>
         <div class="relative"><input class="w-full h-12 px-5 bg-surface-container-low border-none rounded-full focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-stone-400 text-sm" placeholder="Card Number" type="text"/><span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-stone-400">credit_card</span></div>
         <div class="grid grid-cols-2 gap-3"><input class="h-12 px-5 bg-surface-container-low border-none rounded-full focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-stone-400 text-sm" placeholder="MM / YY" type="text"/><input class="h-12 px-5 bg-surface-container-low border-none rounded-full focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-stone-400 text-sm" placeholder="CVC" type="text"/></div>
       </div>
-      <!-- Summary -->
-      <div class="glass-panel p-6 rounded-lg shadow-xl shadow-black/5 bg-white/50 mb-6">
+      <div class="glass-border p-6 rounded-lg shadow-xl shadow-black/5 bg-white/50 mb-6">
         <h4 class="text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-4">Order Summary</h4>
         <div class="flex justify-between items-center mb-2"><span class="text-on-surface-variant text-sm">${isAnnual ? 'Annual' : 'Monthly'} Premium</span><span class="font-semibold">${price}</span></div>
         <div class="flex justify-between items-center mb-3"><span class="text-on-surface-variant text-sm">Platform Access Fee</span><span class="font-semibold">$0.00</span></div>
@@ -881,7 +699,6 @@ function completePurchase() {
   state.isPremium = true;
   state.credits = Infinity;
   updateCredits();
-  // Show success overlay
   const overlay = document.getElementById('checkout-overlay');
   document.getElementById('checkout-content').innerHTML = `
     <div class="page-enter flex flex-col items-center justify-center min-h-screen text-center px-6">
@@ -903,9 +720,7 @@ function showHistory() {
   content.innerHTML = `
     <div class="mb-6">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
-          <span class="material-symbols-outlined text-primary">history</span>
-        </div>
+        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center"><span class="material-symbols-outlined text-primary">history</span></div>
         <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Your Journeys</span>
       </div>
       <h1 class="text-3xl font-extrabold tracking-tighter text-on-surface mb-2">Discovery History</h1>
@@ -919,50 +734,30 @@ function showHistory() {
       </div>
     ` : items.map((h, i) => `
       <div class="flex gap-4 mb-4 p-4 bg-surface-container-low rounded-xl">
-        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0">
-          <span class="text-sm font-extrabold text-on-surface-variant">${items.length - i}</span>
-        </div>
+        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0"><span class="text-sm font-extrabold text-on-surface-variant">${items.length - i}</span></div>
         <div class="flex-1 min-w-0">
           <h3 class="font-bold text-sm text-on-surface truncate">${h.name}</h3>
           <p class="text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">${h.category} · ${h.distance} away</p>
           ${h.rating ? `<div class="flex items-center gap-1 mt-1"><span class="text-amber-500 text-xs font-bold">${h.rating.toFixed(1)} ★</span><span class="text-[10px] text-on-surface-variant">${h.reviews ? h.reviews + ' reviews' : ''}</span></div>` : ''}
           ${h.address ? `<p class="text-xs text-on-surface-variant/60 mt-1 truncate">${h.address}</p>` : ''}
         </div>
-        <a href="https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}&query_place_id=${h.id}" target="_blank" rel="noopener" class="flex-shrink-0 w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-          <span class="material-symbols-outlined text-primary text-sm">open_in_new</span>
-        </a>
+        <a href="https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lng}&query_place_id=${h.id}" target="_blank" rel="noopener" class="flex-shrink-0 w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-sm">open_in_new</span></a>
       </div>
-    `).join('')}
-  `;
+    `).join('')}`;
   modal.style.opacity = '1';
   modal.style.pointerEvents = 'auto';
   modal.scrollTop = 0;
 }
 
+function removeSavedPlace(id) { state.savedPlaces = state.savedPlaces.filter(p => p.id !== id); showItinerary(); }
+function showItinerary() { state.page = 'itinerary'; renderPage(); }
+function setItineraryCity(city) { state.itineraryCityTab = city; renderPage(); }
+function assignDay(placeId, day) { const p = state.savedPlaces.find(x => x.id === placeId); if (p) { p.day = day; renderPage(); } }
 
-function removeSavedPlace(id) {
-  state.savedPlaces = state.savedPlaces.filter(p => p.id !== id);
-  showItinerary(); // re-render
-}
-
-// ── Itinerary Page ──
-function showItinerary() {
-  state.page = 'itinerary';
-  renderPage();
-}
-function setItineraryCity(city) {
-  state.itineraryCityTab = city;
-  renderPage();
-}
-function assignDay(placeId, day) {
-  const p = state.savedPlaces.find(x => x.id === placeId);
-  if (p) { p.day = day; renderPage(); }
-}
 function renderItinerary(c) {
-  c.className = 'flex-1 pt-14 pb-8 overflow-y-auto bg-surface';
   if (state.savedPlaces.length === 0) {
     c.innerHTML = `
-      <div class="px-6 pt-6 pb-12 max-w-lg mx-auto page-enter text-center">
+      <div class="px-6 pt-6 pb-12 w-full page-enter text-center">
         <button onclick="navigateTo('account')" class="mb-8 flex items-center gap-1 text-on-surface-variant text-sm"><span class="material-symbols-outlined text-lg">arrow_back</span> Back</button>
         <span class="material-symbols-outlined text-6xl text-outline-variant mb-4 flex justify-center w-full">event_busy</span>
         <h2 class="text-2xl font-headline font-extrabold tracking-tighter mb-2">No Itinerary Yet</h2>
@@ -971,34 +766,15 @@ function renderItinerary(c) {
       </div>`;
     return;
   }
-  
-  // 1. Top Level: City Selectors
   const cities = [...new Set(state.savedPlaces.map(p => p.city || 'Unknown City'))].sort();
-  if (!state.itineraryCityTab || !cities.includes(state.itineraryCityTab)) {
-    state.itineraryCityTab = cities[0];
-  }
-  
+  if (!state.itineraryCityTab || !cities.includes(state.itineraryCityTab)) state.itineraryCityTab = cities[0];
   const cityPills = cities.map(city => `
     <button onclick="setItineraryCity('${city.replace(/'/g, "\\'")}')" class="flex-shrink-0 px-5 py-2 rounded-full font-label text-[10px] tracking-widest uppercase font-bold transition-colors shadow-sm ${state.itineraryCityTab === city ? 'bg-surface-tint text-on-primary' : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}">${city}</button>
   `).join('');
-  
-  // 2. Filter by selected City
   const cityPlaces = state.savedPlaces.filter(p => (p.city || 'Unknown City') === state.itineraryCityTab);
-  
-  // 3. Group by Day
   const daysMap = {};
-  cityPlaces.forEach(p => {
-    const d = p.day || 'Unscheduled';
-    if (!daysMap[d]) daysMap[d] = [];
-    daysMap[d].push(p);
-  });
-  
-  const allDays = Object.keys(daysMap).sort((a,b) => {
-    if (a === 'Unscheduled') return 1;
-    if (b === 'Unscheduled') return -1;
-    return a.localeCompare(b);
-  });
-  
+  cityPlaces.forEach(p => { const d = p.day || 'Unscheduled'; if (!daysMap[d]) daysMap[d] = []; daysMap[d].push(p); });
+  const allDays = Object.keys(daysMap).sort((a,b) => { if (a === 'Unscheduled') return 1; if (b === 'Unscheduled') return -1; return a.localeCompare(b); });
   const daysHtml = allDays.map(day => {
     const placesHtml = daysMap[day].map(p => {
       const catObj = CATEGORIES.find(c => c.name === p.category) || CATEGORIES[0];
@@ -1007,7 +783,6 @@ function renderItinerary(c) {
       <div class="relative pl-6 mb-5">
         <div class="absolute left-0 top-0 bottom-0 w-px bg-outline-variant/30"></div>
         <div class="absolute left-[-4px] top-6 w-2 h-2 rounded-full bg-primary ring-4 ring-surface"></div>
-        
         <div class="bg-surface-container-lowest p-4 rounded-xl shadow-lg shadow-black/5 border border-outline-variant/10 group/card">
           <div class="flex justify-between items-start mb-1">
             <span class="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-sm"><span class="material-symbols-outlined text-[10px]">${catObj.icon}</span> ${p.category}</span>
@@ -1029,32 +804,18 @@ function renderItinerary(c) {
         </div>
       </div>`;
     }).join('');
-    
-    return `
-      <div class="mb-8">
-        <h3 class="font-label text-xs uppercase tracking-widest font-bold text-on-surface-variant mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-sm">calendar_today</span> ${day}</h3>
-        <div>${placesHtml}</div>
-      </div>
-    `;
+    return `<div class="mb-8"><h3 class="font-label text-xs uppercase tracking-widest font-bold text-on-surface-variant mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-sm">calendar_today</span> ${day}</h3><div>${placesHtml}</div></div>`;
   }).join('');
-  
-  c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 max-w-lg mx-auto">
+  c.innerHTML = `<div class="page-enter px-6 pt-6 pb-12 w-full">
     <button onclick="navigateTo('account')" class="mb-4 flex items-center gap-1 text-on-surface-variant text-sm"><span class="material-symbols-outlined text-lg">arrow_back</span> Back</button>
     <span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1 block">Your Master Plan</span>
     <h1 class="text-4xl font-extrabold tracking-tighter text-on-surface mb-6">Itinerary</h1>
-    
-    <div class="flex overflow-x-auto hide-scrollbar gap-2 mb-8 pb-1 -mx-6 px-6">
-      ${cityPills}
-    </div>
-    
-    <div class="itinerary-timeline">
-      ${daysHtml}
-    </div>
+    <div class="flex overflow-x-auto hide-scrollbar gap-2 mb-8 pb-1 -mx-6 px-6">${cityPills}</div>
+    <div class="itinerary-timeline">${daysHtml}</div>
   </div>`;
 }
 
-// ── Auth Handlers ──
-function handleLogin(form) {
+function handleLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
   if (!user || !pass) { showToast('Please fill in all fields.'); return; }
@@ -1062,10 +823,11 @@ function handleLogin(form) {
   showToast('Welcome back, ' + user + '!');
   navigateTo('account');
 }
-function handleRegister(form) {
-  const name  = document.getElementById('reg-name').value.trim();
+
+function handleRegister() {
+  const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
-  const pass  = document.getElementById('reg-pass').value;
+  const pass = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
   if (!name || !email || !pass) { showToast('Please fill in all required fields.'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email address.'); return; }
@@ -1076,13 +838,9 @@ function handleRegister(form) {
   showToast('Welcome aboard, ' + name + '! You can now log in.');
   navigateTo('account');
 }
-function logOut() {
-  state.user = null;
-  showToast('You have been logged out.');
-  navigateTo('map');
-}
 
-// ── Confirmation Dialog ──
+function logOut() { state.user = null; showToast('You have been logged out.'); navigateTo('map'); }
+
 function showConfirm(title, message, onConfirm) {
   const gate = document.getElementById('premium-gate');
   const card = document.getElementById('premium-card');
@@ -1091,56 +849,36 @@ function showConfirm(title, message, onConfirm) {
     <h2 class="font-headline text-2xl font-extrabold tracking-tighter text-on-surface mb-3">${title}</h2>
     <p class="text-on-surface-variant text-sm leading-relaxed mb-8">${message}</p>
     <button id="confirm-action-btn" class="w-full py-3.5 rounded-full bg-error text-white font-label text-xs tracking-widest font-bold shadow-xl active:scale-95 transition-transform mb-3">Confirm</button>
-    <button onclick="closePremiumGate()" class="text-on-surface-variant text-xs hover:text-on-surface transition-colors">Cancel</button>
-  `;
+    <button onclick="closePremiumGate()" class="text-on-surface-variant text-xs hover:text-on-surface transition-colors">Cancel</button>`;
   document.getElementById('confirm-action-btn').onclick = () => { closePremiumGate(); onConfirm(); };
   gate.style.opacity = '1'; gate.style.pointerEvents = 'auto';
   card.classList.remove('scale-95'); card.classList.add('scale-100');
 }
 
-function cancelMembership() {
-  state.isPremium = false;
-  state.credits = 0;
-  updateCredits();
-  showToast('Your premium membership has been cancelled.');
-  navigateTo('settings');
-}
+function cancelMembership() { state.isPremium = false; state.credits = 0; updateCredits(); showToast('Your premium membership has been cancelled.'); navigateTo('settings'); }
+
 function deleteMyData() {
-  state.history = [];
-  state.savedPlaces = [];
-  state.discoveredMarkers = [];
-  poiMarkers.forEach(m => { m.map = null; });
-  poiMarkers = [];
-  showToast('All your data has been deleted.');
-  navigateTo('settings');
+  state.history = []; state.savedPlaces = []; state.discoveredMarkers = [];
+  poiMarkers.forEach(m => { m.map = null; }); poiMarkers = [];
+  showToast('All your data has been deleted.'); navigateTo('settings');
 }
+
 function deleteMyAccount() {
-  state.user = null;
-  state.isPremium = false;
-  state.credits = 3;
-  state.history = [];
-  state.savedPlaces = [];
-  state.discoveredMarkers = [];
-  poiMarkers.forEach(m => { m.map = null; });
-  poiMarkers = [];
-  showToast('Your account has been deleted.');
-  navigateTo('map');
+  deleteMyData(); state.user = null; state.isPremium = false; state.credits = 3;
+  showToast('Your account has been deleted.'); navigateTo('map');
 }
 
 function setTheme(t) {
   state.theme = t;
   localStorage.setItem('wl_theme', t);
   document.documentElement.classList.toggle('dark', t === 'dark');
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', t === 'dark' ? '#050d0d' : '#f5fffe'));
   renderPage();
 }
 
-// ── Legal Modal ──
 const LEGAL_CONTENT = {
   terms: {
-    icon: 'gavel',
-    label: 'Legal',
-    title: 'Terms & Conditions',
-    updated: 'Last updated: April 7, 2026',
+    icon: 'gavel', label: 'Legal', title: 'Terms & Conditions', updated: 'Last updated: April 7, 2026',
     sections: [
       { h: '1. Acceptance of Terms', p: 'By downloading, accessing, or using Wanderlost, you agree to be bound by these Terms and Conditions. If you do not agree, do not use the application.' },
       { h: '2. The Service (Discovery, Not Curation)', p: 'Wanderlost is a recommendation engine that utilizes third-party algorithms to identify high-rated locations.', list: ['<strong>No Curation:</strong> We do not manually vet, visit, or curate these locations.', '<strong>No Travel Guide:</strong> Wanderlost does not provide travel advice, safety ratings, or guided services. We provide a visual interface for public data.'] },
@@ -1155,10 +893,7 @@ const LEGAL_CONTENT = {
     ],
   },
   privacy: {
-    icon: 'shield_person',
-    label: 'Privacy',
-    title: 'Privacy Policy',
-    updated: 'Last updated: April 7, 2026',
+    icon: 'shield_person', label: 'Privacy', title: 'Privacy Policy', updated: 'Last updated: April 7, 2026',
     sections: [
       { h: '1. Data We Collect', p: 'Wanderlost collects the minimum data necessary to deliver the service:', list: ['<strong>Location Data:</strong> Used exclusively to find nearby discoveries. Not stored on our servers.', '<strong>Account Information:</strong> Email address and encrypted password for authentication.', '<strong>Usage Data:</strong> Number of discoveries used (for free-tier tracking). No browsing history is collected.'] },
       { h: '2. Data We Do Not Collect', list: ['We do not collect contacts, photos, or files.', 'We do not track your movements or create location history.', 'We do not sell or share personal data with third parties for advertising.'] },
@@ -1170,10 +905,7 @@ const LEGAL_CONTENT = {
     ],
   },
   safety: {
-    icon: 'health_and_safety',
-    label: 'Safety',
-    title: 'Safety Measures',
-    updated: 'Your safety is your own responsibility',
+    icon: 'health_and_safety', label: 'Safety', title: 'Safety Measures', updated: 'Your safety is your own responsibility',
     sections: [
       { h: 'The Self-Preservation Principle', p: 'Wanderlost surfaces high-rated locations from public data. We do not guarantee the safety, legality, or accessibility of any discovered place. Before every journey, practice self-preservation.' },
       { h: '1. Before You Go', list: ['<strong>Research:</strong> Read recent reviews and verify the location\'s current status online.', '<strong>Inform Someone:</strong> Share your destination with a trusted person.', '<strong>Connectivity:</strong> Ensure your phone is charged and you have signal or an offline map downloaded.', '<strong>Local Laws:</strong> Verify that visiting the location is legal, especially for natural sites, private property, or restricted areas.'] },
@@ -1193,9 +925,7 @@ function showLegal(type) {
   content.innerHTML = `
     <div class="mb-8">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
-          <span class="material-symbols-outlined text-primary">${data.icon}</span>
-        </div>
+        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center"><span class="material-symbols-outlined text-primary">${data.icon}</span></div>
         <span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">${data.label}</span>
       </div>
       <h1 class="text-3xl font-extrabold tracking-tighter text-on-surface mb-2">${data.title}</h1>
@@ -1225,47 +955,20 @@ function showLegal(type) {
         `).join('')}
       </div>
       <p class="text-[10px] uppercase tracking-widest text-on-surface-variant/40 text-center mt-6">Wanderlost — Digital Sanctuary Project</p>
-    </div>
-  `;
+    </div>`;
   modal.style.opacity = '1';
   modal.style.pointerEvents = 'auto';
   modal.scrollTop = 0;
 }
 
-function closeLegalModal() {
-  const modal = document.getElementById('legal-modal');
-  modal.style.opacity = '0';
-  modal.style.pointerEvents = 'none';
-}
+function closeLegalModal() { const m = document.getElementById('legal-modal'); m.style.opacity = '0'; m.style.pointerEvents = 'none'; }
+function closeCheckoutOverlay() { const o = document.getElementById('checkout-overlay'); o.style.opacity = '0'; o.style.pointerEvents = 'none'; }
+function openHelpCenter() { window.open('mailto:support@wanderlost.app', '_blank'); showToast('Opening email client for support@wanderlost.app'); }
+function openSearch() { const ov = document.getElementById('search-overlay'); if (ov) { ov.style.opacity = '1'; ov.style.pointerEvents = 'auto'; setTimeout(() => document.getElementById('search-input')?.focus(), 100); } }
+function closeSearch() { const ov = document.getElementById('search-overlay'); if (ov) { ov.style.opacity = '0'; ov.style.pointerEvents = 'none'; } }
+function openCheckout() { closePremiumGate(); navigateTo('checkout'); }
+function handleCreditsClick() { if (!state.isPremium) showPremiumGate(); else showToast('You have unlimited discoveries!'); }
 
-function closeCheckoutOverlay() {
-  const overlay = document.getElementById('checkout-overlay');
-  overlay.style.opacity = '0';
-  overlay.style.pointerEvents = 'none';
-}
-
-function openHelpCenter() {
-  window.open('mailto:support@wanderlost.app', '_blank');
-  showToast('Opening email client for support@wanderlost.app');
-}
-
-function openSearch() {
-  const ov = document.getElementById('search-overlay');
-  if (ov) {
-    ov.style.opacity = '1';
-    ov.style.pointerEvents = 'auto';
-    setTimeout(() => document.getElementById('search-input')?.focus(), 100);
-  }
-}
-function closeSearch() {
-  const ov = document.getElementById('search-overlay');
-  if (ov) {
-    ov.style.opacity = '0';
-    ov.style.pointerEvents = 'none';
-  }
-}
-
-// ── Globals ──
 window.openSearch = openSearch;
 window.closeSearch = closeSearch;
 window.onMapsReady = onMapsReady;
@@ -1275,7 +978,8 @@ window.selectCategory = selectCategory;
 window.toggleSave = toggleSave;
 window.showPremiumGate = showPremiumGate;
 window.closePremiumGate = closePremiumGate;
-window.collapseSheet = collapseSheet;
+window.openCheckout = openCheckout;
+window.handleCreditsClick = handleCreditsClick;
 window.dismissSheet = dismissSheet;
 window.completePurchase = completePurchase;
 window.showHistory = showHistory;
@@ -1296,8 +1000,4 @@ window.removeSavedPlace = removeSavedPlace;
 window.closeCheckoutOverlay = closeCheckoutOverlay;
 window.openHelpCenter = openHelpCenter;
 
-// ── Init ──
 navigateTo('map');
-
-
-/* build: 2026-04-10T18:58:04 */
