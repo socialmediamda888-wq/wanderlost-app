@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WANDERLOST v4 — SHELL LAYOUT
+   CSS Grid. Edge-to-edge. Zero absolute positioning for layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── App Grid ─────────────────────────────────────────────────────────── */
+#app {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows:
+    var(--inset-top)
+    auto
+    auto
+    1fr
+    auto
+    var(--inset-bottom);
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur-slow) var(--ease-out),
+              visibility var(--dur-slow) var(--ease-out);
+}
+
+#app.app--ready {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── Map Layer — spans ALL rows ───────────────────────────────────────── */
+#map-layer {
+  grid-row: 1 / -1;
+  grid-column: 1;
+  z-index: var(--z-map);
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+}
+
+#map-layer > * {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+#gmap {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Top gradient scrim (covers topbar area) */
+#map-scrim-top {
+  align-self: start;
+  height: clamp(6rem, 18dvh, 11rem);
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Bottom gradient scrim (covers navbar area) */
+#map-scrim-bottom {
+  align-self: end;
+  height: clamp(7rem, 22dvh, 14rem);
+  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Topbar — row 2 ───────────────────────────────────────────────────── */
+#topbar {
+  grid-row: 2;
+  grid-column: 1;
+  z-index: var(--z-topbar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  padding-left: max(var(--inset-left), var(--sp-5));
+  padding-right: max(var(--inset-right), var(--sp-4));
+}
+
+/* ── Category Bar — row 3 ─────────────────────────────────────────────── */
+#category-bar {
+  grid-row: 3;
+  grid-column: 1;
+  z-index: var(--z-catbar);
+  padding: var(--sp-1) 0;
+  overflow: hidden;
+}
+
+#category-bar.hidden {
+  display: none;
+}
+
+.pill-track {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  padding-left: max(var(--inset-left), var(--sp-4));
+  padding-right: max(var(--inset-right), var(--sp-4));
+  padding-bottom: var(--sp-1);
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pill-track::-webkit-scrollbar { display: none; }
+
+/* ── Content — row 4 ──────────────────────────────────────────────────── */
+#content {
+  grid-row: 4;
+  grid-column: 1;
+  z-index: var(--z-content);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#content.page-active {
+  overflow-y: auto;
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Bottom Sheet — spans all rows ───────────────────────────────────── */
+#discovery-sheet {
+  grid-row: 1 / -1;
+  grid-column: 1;
+  z-index: var(--z-sheet);
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+#discovery-sheet.sheet--open {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+#discovery-sheet > * {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+/* Backdrop */
+.sheet-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-out);
+}
+
+#discovery-sheet.sheet--open .sheet-backdrop {
+  opacity: 1;
+}
+
+/* Draggable surface */
+#sheet-surface {
+  align-self: end;
+  max-height: 92dvh;
+  background: var(--surface);
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  will-change: transform;
+}
+
+/* ── Premium Gate — spans all rows ───────────────────────────────────── */
+#premium-gate {
+  grid-row: 1 / -1;
+  grid-column: 1;
+  z-index: var(--z-gate);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--dur-normal) var(--ease-out),
+              visibility var(--dur-normal);
+}
+
+#premium-gate.gate--open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* ── Navbar — row 5 ───────────────────────────────────────────────────── */
+#navbar {
+  grid-row: 5;
+  grid-column: 1;
+  z-index: var(--z-topbar);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-top: var(--sp-2);
+  padding-bottom: max(var(--inset-bottom), var(--sp-3));
+  padding-left: max(var(--inset-left), var(--sp-6));
+  padding-right: max(var(--inset-right), var(--sp-6));
+}
+
+/* ── Splash ───────────────────────────────────────────────────────────── */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-splash);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  background: var(--bg);
+  border: none;
+  padding: var(--sp-8);
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  transition: opacity var(--dur-slow) var(--ease-in-out),
+              visibility var(--dur-slow) linear;
+}
+
+#splash.splash--out {
+  opacity: 0;
+  visibility: hidden;
+}

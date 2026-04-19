@@ -1,23 +1,40 @@
-const CACHE_NAME = 'wanderlost-v1';
-const STATIC_ASSETS = [
-  '/wanderlost-app/',
-  '/wanderlost-app/index.html',
-  '/wanderlost-app/app.js',
-  '/wanderlost-app/style.css',
-  '/wanderlost-app/manifest.json',
-  '/wanderlost-app/icons/icon-192.png',
-  '/wanderlost-app/icons/icon-512.png',
+/* ═══════════════════════════════════════════════════════════════════════════
+   WANDERLOST v4 — SERVICE WORKER
+   Network-first for API calls. Cache-first for static assets.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const CACHE_NAME   = 'wanderlost-v4';
+const STATIC_CACHE = [
+  '/',
+  '/index.html',
+  '/css/tokens.css',
+  '/css/reset.css',
+  '/css/shell.css',
+  '/css/components.css',
+  '/js/app.js',
+  '/js/auth.js',
+  '/js/discovery.js',
+  '/js/firebase-config.js',
+  '/js/gesture.js',
+  '/js/map.js',
+  '/js/router.js',
+  '/js/shell.js',
+  '/manifest.json',
+  '/icons/logo.png',
+  '/icons/splash-logo.png',
 ];
 
-// Install: pre-cache static assets
+/* ── Install: pre-cache static assets ────────────────────────────────── */
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(STATIC_CACHE))
+      .then(() => self.skipWaiting())
+      .catch(err => console.warn('[SW] Cache install failed:', err))
   );
 });
 
-// Activate: clean up old caches
+/* ── Activate: clear old caches ──────────────────────────────────────── */
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -26,26 +43,27 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch: network-first for API calls, cache-first for static assets
+/* ── Fetch: network-first with cache fallback ─────────────────────────── */
 self.addEventListener('fetch', event => {
+  // Skip non-GET and cross-origin requests
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
+  const isLocal = url.origin === self.location.origin;
+  const isFont  = url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com');
 
-  // Always fetch Google Maps API from the network
-  if (url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com') || url.hostname.includes('google.com')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
+  if (!isLocal && !isFont) return; // Let Google Maps API requests pass through
 
-  // Cache-first strategy for static assets
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') return response;
-        const cloned = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
-        return response;
-      });
-    }).catch(() => caches.match('/wanderlost-app/index.html'))
+    fetch(event.request)
+      .then(res => {
+        // Cache successful GET responses to same-origin requests
+        if (res.ok && isLocal) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return res;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
